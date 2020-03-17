@@ -6,6 +6,7 @@ import (
 	"image"
 	"image/jpeg"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -34,29 +35,53 @@ func CSFUploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	bucket := firebaseInit()
 	ctx := context.Background()
-
-	file, fileHeader, err := r.FormFile("uploadCSF")
+	reader, err := r.MultipartReader()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	remoteFilename := fileHeader.Filename
-	writer := bucket.Object(remoteFilename).NewWriter(ctx)
-	writer.ObjectAttrs.ContentType = fileHeader.Header.Get("Content-Type")
-	writer.ObjectAttrs.CacheControl = "no-cache"
-	writer.ObjectAttrs.ACL = []storage.ACLRule{
-		{
-			Entity: storage.AllUsers,
-			Role:   storage.RoleReader,
-		},
-	}
+	for {
+		file, err := reader.NextPart()
+		if err == io.EOF {
+			break
+		}
 
-	defer writer.Close()
+		//ファイル名がない場合はスキップする
+		if file.FileName() == "" {
+			continue
+		}
+		// file, fileHeader, err := r.FormFile("uploadCSF")
+		// if err != nil {
+		// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+		// 	return
+		// }
 
-	if _, err = io.Copy(writer, file); err != nil {
-		log.Fatalln(err)
+		contentType := ""
+		fileData, err := ioutil.ReadAll(file)
+		if err != nil {
+			contentType = "application/octet-stream"
+		} else {
+			contentType = http.DetectContentType(fileData)
+		}
+
+		remoteFilename := file.FileName()
+		writer := bucket.Object(remoteFilename).NewWriter(ctx)
+		writer.ObjectAttrs.ContentType = contentType
+		writer.ObjectAttrs.CacheControl = "no-cache"
+		writer.ObjectAttrs.ACL = []storage.ACLRule{
+			{
+				Entity: storage.AllUsers,
+				Role:   storage.RoleReader,
+			},
+		}
+
+		defer writer.Close()
+
+		if _, err = io.Copy(writer, file); err != nil {
+			log.Fatalln(err)
+		}
+		print("uploaded")
 	}
-	print("uploaded")
 }
 
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
