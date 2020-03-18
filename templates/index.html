@@ -5,13 +5,10 @@
     <title>{{ .Title |html }}</title>
   </head>
   <body>
-    <form action="/upload" enctype="multipart/form-data" method="post">
-      <input type="file" name="upload" id="upload" multiple="multiple">
-      <input type="submit" value="Upload file" />
-    </form>
     <form action="/uploadCSF" enctype="multipart/form-data" method="post">
       <input type="file" name="uploadCSF" id="uploadCSF" multiple="multiple">
       <input type="submit" value="Upload file" />
     </form>
+    <a href="/showCSF">写真一覧へ</a>
   </body>
 </html>

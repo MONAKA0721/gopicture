@@ -13,6 +13,7 @@ import (
 	"text/template"
 
 	"golang.org/x/net/context"
+	"google.golang.org/api/iterator"
 
 	firebase "firebase.google.com/go"
 
@@ -20,19 +21,47 @@ import (
 	"google.golang.org/api/option"
 )
 
-var templates = template.Must(template.ParseFiles("templates/index.html", "templates/show.html"))
+var templates = template.Must(template.ParseFiles("templates/index.html", "templates/show.html", "templates/CSFshow.html", "templates/upload.html"))
 
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	data := map[string]interface{}{"Title": "index"}
 	renderTemplate(w, "index", data)
 }
 
+func CSFShowHandler(w http.ResponseWriter, r *http.Request) {
+	bucket := firebaseInit()
+	ctx := context.Background()
+	it := bucket.Objects(ctx, nil)
+	links := []string{}
+	for {
+		attrs, err := it.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return
+		}
+		// fmt.Fprintln(w, attrs.Name)
+		links = append(links, "https://storage.googleapis.com/go-pictures.appspot.com/"+attrs.Name)
+	}
+	data := map[string]interface{}{"Title": "CSFshow", "links": links}
+	renderTemplate(w, "CSFshow", data)
+	o := bucket.Object("スクリーンショット 2020-03-08 14.03.38.png")
+	attrs, _ := o.Attrs(ctx)
+	print(attrs.Created.String())
+	return
+}
+
 // CSFUploadHandler は Cloud Storage for Firebase にアップロードするための関数です
 func CSFUploadHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		http.Error(w, "Allowed POST method only", http.StatusMethodNotAllowed)
-		return
+	if r.Method == "GET" {
+		data := map[string]interface{}{"Title": "Upload"}
+		renderTemplate(w, "upload", data)
 	}
+	// if r.Method = "POST" {
+	// 	http.Error(w, "Allowed POST method only", http.StatusMethodNotAllowed)
+	// 	return
+	// }
 	bucket := firebaseInit()
 	ctx := context.Background()
 	reader, err := r.MultipartReader()
@@ -45,6 +74,14 @@ func CSFUploadHandler(w http.ResponseWriter, r *http.Request) {
 		if err == io.EOF {
 			break
 		}
+		defer file.Close()
+		// x, err := exif.Decode(file)
+		// if err != nil {
+		// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+		// } else {
+		// 	time, _ := x.DateTime()
+		// 	println(time.String())
+		// }
 
 		//ファイル名がない場合はスキップする
 		if file.FileName() == "" {
@@ -77,10 +114,11 @@ func CSFUploadHandler(w http.ResponseWriter, r *http.Request) {
 
 		defer writer.Close()
 
-		if _, err = io.Copy(writer, file); err != nil {
+		if _, err = writer.Write(fileData); err != nil {
 			log.Fatalln(err)
 		}
-		print("uploaded")
+		http.Redirect(w, r, "/uploadCSF", http.StatusFound)
+
 	}
 }
 
@@ -175,5 +213,6 @@ func main() {
 	http.HandleFunc("/upload", UploadHandler)
 	http.HandleFunc("/show", ShowHandler)
 	http.HandleFunc("/uploadCSF", CSFUploadHandler)
+	http.HandleFunc("/showCSF", CSFShowHandler)
 	http.ListenAndServe(":8888", nil)
 }
