@@ -21,14 +21,14 @@ import (
 	"google.golang.org/api/option"
 )
 
-var templates = template.Must(template.ParseFiles("templates/index.html", "templates/show.html", "templates/CSFshow.html", "templates/upload.html"))
+var templates = template.Must(template.ParseFiles("templates/index.html", "templates/show.html", "templates/upload.html"))
 
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	data := map[string]interface{}{"Title": "index"}
 	renderTemplate(w, "index", data)
 }
 
-func CSFShowHandler(w http.ResponseWriter, r *http.Request) {
+func ShowHandler(w http.ResponseWriter, r *http.Request) {
 	bucket := firebaseInit()
 	ctx := context.Background()
 	it := bucket.Objects(ctx, nil)
@@ -45,7 +45,7 @@ func CSFShowHandler(w http.ResponseWriter, r *http.Request) {
 		links = append(links, "https://storage.googleapis.com/go-pictures.appspot.com/"+attrs.Name)
 	}
 	data := map[string]interface{}{"Title": "CSFshow", "links": links}
-	renderTemplate(w, "CSFshow", data)
+	renderTemplate(w, "show", data)
 	o := bucket.Object("スクリーンショット 2020-03-08 14.03.38.png")
 	attrs, _ := o.Attrs(ctx)
 	print(attrs.Created.String())
@@ -151,23 +151,6 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/show", http.StatusFound)
 }
 
-func ShowHandler(w http.ResponseWriter, r *http.Request) {
-	file, err := os.Open("/tmp/test.jpg")
-	defer file.Close()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	img, _, err := image.Decode(file)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	writeImageWithTemplate(w, "show", &img)
-}
-
 func renderTemplate(w http.ResponseWriter, tmpl string, data interface{}) {
 	if err := templates.ExecuteTemplate(w, tmpl+".html", data); err != nil {
 		log.Fatalln("Unable to execute template.")
@@ -213,6 +196,5 @@ func main() {
 	http.HandleFunc("/upload", UploadHandler)
 	http.HandleFunc("/show", ShowHandler)
 	http.HandleFunc("/uploadCSF", CSFUploadHandler)
-	http.HandleFunc("/showCSF", CSFShowHandler)
 	http.ListenAndServe(":8888", nil)
 }
