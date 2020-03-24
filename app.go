@@ -9,14 +9,16 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"text/template"
+
+	"github.com/rwcarlsen/goexif/exif"
 
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
 
 	firebase "firebase.google.com/go"
 
+	"cloud.google.com/go/firestore"
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/option"
 )
@@ -29,7 +31,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func ShowHandler(w http.ResponseWriter, r *http.Request) {
-	bucket := firebaseInit()
+	bucket, _ := firebaseInit()
 	ctx := context.Background()
 	it := bucket.Objects(ctx, nil)
 	links := []string{}
@@ -52,17 +54,38 @@ func ShowHandler(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-// CSFUploadHandler は Cloud Storage for Firebase にアップロードするための関数です
-func CSFUploadHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "GET" {
-		data := map[string]interface{}{"Title": "Upload"}
-		renderTemplate(w, "upload", data)
+func ShowSequenceHandler(w http.ResponseWriter, r *http.Request) {
+	bucket, _ := firebaseInit()
+	ctx := context.Background()
+	it := bucket.Objects(ctx, nil)
+	links := []string{}
+	for {
+		attrs, err := it.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return
+		}
+		// fmt.Fprintln(w, attrs.Name)
+		links = append(links, "https://storage.googleapis.com/go-pictures.appspot.com/"+attrs.Name)
 	}
+	data := map[string]interface{}{"Title": "CSFshow", "links": links}
+	renderTemplate(w, "show", data)
+	o := bucket.Object("スクリーンショット 2020-03-08 14.03.38.png")
+	attrs, _ := o.Attrs(ctx)
+	print(attrs.Created.String())
+	return
+}
+
+// UploadHandler は Cloud Storage for Firebase にアップロードするための関数です
+func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	// if r.Method = "POST" {
 	// 	http.Error(w, "Allowed POST method only", http.StatusMethodNotAllowed)
 	// 	return
 	// }
-	bucket := firebaseInit()
+	bucket, storeClient := firebaseInit()
+	defer storeClient.Close()
 	ctx := context.Background()
 	reader, err := r.MultipartReader()
 	if err != nil {
@@ -70,38 +93,32 @@ func CSFUploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for {
-		file, err := reader.NextPart()
+		part, err := reader.NextPart()
 		if err == io.EOF {
 			break
 		}
-		defer file.Close()
-		// x, err := exif.Decode(file)
-		// if err != nil {
-		// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-		// } else {
-		// 	time, _ := x.DateTime()
-		// 	println(time.String())
-		// }
-
-		//ファイル名がない場合はスキップする
-		if file.FileName() == "" {
+		defer part.Close()
+		buf := bytes.NewBuffer(nil)
+		buf2 := bytes.NewBuffer(nil)
+		bufWriter := io.MultiWriter(buf, buf2)
+		io.Copy(bufWriter, part)
+		// ファイル名がない場合はスキップする
+		if part.FileName() == "" {
 			continue
 		}
-		// file, fileHeader, err := r.FormFile("uploadCSF")
-		// if err != nil {
-		// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-		// 	return
-		// }
+
+		remoteFilename := part.FileName()
 
 		contentType := ""
-		fileData, err := ioutil.ReadAll(file)
+		fileData, err := ioutil.ReadAll(buf)
 		if err != nil {
+			print("error")
 			contentType = "application/octet-stream"
 		} else {
 			contentType = http.DetectContentType(fileData)
+			print(contentType)
 		}
 
-		remoteFilename := file.FileName()
 		writer := bucket.Object(remoteFilename).NewWriter(ctx)
 		writer.ObjectAttrs.ContentType = contentType
 		writer.ObjectAttrs.CacheControl = "no-cache"
@@ -111,43 +128,30 @@ func CSFUploadHandler(w http.ResponseWriter, r *http.Request) {
 				Role:   storage.RoleReader,
 			},
 		}
-
 		defer writer.Close()
-
 		if _, err = writer.Write(fileData); err != nil {
 			log.Fatalln(err)
 		}
-		http.Redirect(w, r, "/uploadCSF", http.StatusFound)
+
+		x, err := exif.Decode(buf2)
+		timeStr := ""
+		if err != nil {
+			print("error")
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		} else {
+			time, _ := x.DateTime()
+			timeStr = time.String()
+			println(time.String())
+		}
+		_, _, err = storeClient.Collection("links").Add(ctx, map[string]interface{}{
+			"filename": remoteFilename,
+			"date":     timeStr,
+		})
+		if err != nil {
+			log.Fatalf("Failed adding alovelace: %v", err)
+		}
 
 	}
-}
-
-func UploadHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		http.Error(w, "Allowed POST method only", http.StatusMethodNotAllowed)
-		return
-	}
-	err := r.ParseMultipartForm(32 << 20) // maxMemory
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	file, _, err := r.FormFile("upload")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer file.Close()
-
-	f, err := os.Create("/tmp/test.jpg")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer f.Close()
-
-	io.Copy(f, file)
 	http.Redirect(w, r, "/show", http.StatusFound)
 }
 
@@ -171,7 +175,7 @@ func writeImageWithTemplate(w http.ResponseWriter, tmpl string, img *image.Image
 	data := map[string]interface{}{"Title": tmpl, "Image": str}
 	renderTemplate(w, tmpl, data)
 }
-func firebaseInit() (bkthdl *storage.BucketHandle) {
+func firebaseInit() (bkthdl *storage.BucketHandle, sc *firestore.Client) {
 	config := &firebase.Config{
 		StorageBucket: "go-pictures.appspot.com",
 	}
@@ -189,12 +193,16 @@ func firebaseInit() (bkthdl *storage.BucketHandle) {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	return bucket
+
+	storeClient, err := app.Firestore(context.Background())
+	if err != nil {
+		log.Fatalln(err)
+	}
+	return bucket, storeClient
 }
 func main() {
 	http.HandleFunc("/", IndexHandler)
 	http.HandleFunc("/upload", UploadHandler)
 	http.HandleFunc("/show", ShowHandler)
-	http.HandleFunc("/uploadCSF", CSFUploadHandler)
 	http.ListenAndServe(":8888", nil)
 }

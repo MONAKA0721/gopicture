@@ -5,8 +5,8 @@
     <title>{{ .Title |html }}</title>
   </head>
   <body>
-    <form action="/uploadCSF" enctype="multipart/form-data" method="post">
-      <input type="file" name="uploadCSF" id="uploadCSF" multiple="multiple">
+    <form action="/upload" enctype="multipart/form-data" method="post">
+      <input type="file" name="upload-firebase" id="upload-firebase" multiple="multiple">
       <input type="submit" value="Upload file" />
     </form>
     <a href="/show">写真一覧へ</a>
