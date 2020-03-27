@@ -231,10 +231,11 @@ func FavoriteHandler(w http.ResponseWriter, r *http.Request) {
 var bucket, storeClient = firebaseInit()
 
 func main() {
+	port := os.Getenv("PORT")
 	http.HandleFunc("/", IndexHandler)
 	http.HandleFunc("/upload", UploadHandler)
 	http.HandleFunc("/show", ShowHandler)
 	http.HandleFunc("/sequence", SequenceHandler)
 	http.HandleFunc("/favorite", FavoriteHandler)
-	http.ListenAndServe(":8888", nil)
+	http.ListenAndServe(":"+port, nil)
 }
