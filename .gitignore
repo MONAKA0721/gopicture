@@ -1,3 +1,4 @@
 storage-exp-key.json
 *.jpg
 *.txt
+.idea/

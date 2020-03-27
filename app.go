@@ -9,6 +9,9 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"strconv"
+	"strings"
 	"text/template"
 
 	"github.com/rwcarlsen/goexif/exif"
@@ -23,7 +26,7 @@ import (
 	"google.golang.org/api/option"
 )
 
-var templates = template.Must(template.ParseFiles("templates/index.html", "templates/show.html", "templates/upload.html"))
+var templates = template.Must(template.ParseFiles("templates/index.html", "templates/show.html"))
 
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	data := map[string]interface{}{"Title": "index"}
@@ -31,7 +34,6 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func ShowHandler(w http.ResponseWriter, r *http.Request) {
-	bucket, _ := firebaseInit()
 	ctx := context.Background()
 	it := bucket.Objects(ctx, nil)
 	links := []string{}
@@ -43,19 +45,16 @@ func ShowHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			return
 		}
-		// fmt.Fprintln(w, attrs.Name)
-		links = append(links, "https://storage.googleapis.com/go-pictures.appspot.com/"+attrs.Name)
+		if !strings.Contains(attrs.Name, "sequence") {
+			links = append(links, "https://storage.googleapis.com/go-pictures.appspot.com/"+attrs.Name)
+		}
 	}
 	data := map[string]interface{}{"Title": "CSFshow", "links": links}
 	renderTemplate(w, "show", data)
-	o := bucket.Object("スクリーンショット 2020-03-08 14.03.38.png")
-	attrs, _ := o.Attrs(ctx)
-	print(attrs.Created.String())
 	return
 }
 
-func ShowSequenceHandler(w http.ResponseWriter, r *http.Request) {
-	bucket, _ := firebaseInit()
+func SequenceHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 	it := bucket.Objects(ctx, nil)
 	links := []string{}
@@ -67,14 +66,13 @@ func ShowSequenceHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			return
 		}
-		// fmt.Fprintln(w, attrs.Name)
-		links = append(links, "https://storage.googleapis.com/go-pictures.appspot.com/"+attrs.Name)
+		if strings.Contains(attrs.Name, "sequence/D") {
+			links = append(links, "https://storage.googleapis.com/go-pictures.appspot.com/"+attrs.Name)
+			print(attrs.Name)
+		}
 	}
 	data := map[string]interface{}{"Title": "CSFshow", "links": links}
 	renderTemplate(w, "show", data)
-	o := bucket.Object("スクリーンショット 2020-03-08 14.03.38.png")
-	attrs, _ := o.Attrs(ctx)
-	print(attrs.Created.String())
 	return
 }
 
@@ -84,7 +82,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	// 	http.Error(w, "Allowed POST method only", http.StatusMethodNotAllowed)
 	// 	return
 	// }
-	bucket, storeClient := firebaseInit()
+
 	defer storeClient.Close()
 	ctx := context.Background()
 	reader, err := r.MultipartReader()
@@ -179,8 +177,9 @@ func firebaseInit() (bkthdl *storage.BucketHandle, sc *firestore.Client) {
 	config := &firebase.Config{
 		StorageBucket: "go-pictures.appspot.com",
 	}
-	opt := option.WithCredentialsFile("storage-exp-key.json")
-	app, err := firebase.NewApp(context.Background(), config, opt)
+	ctx := context.Background()
+	opt := option.WithCredentialsJSON([]byte(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")))
+	app, err := firebase.NewApp(ctx, config, opt)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -200,9 +199,42 @@ func firebaseInit() (bkthdl *storage.BucketHandle, sc *firestore.Client) {
 	}
 	return bucket, storeClient
 }
+
+func FavoriteHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := context.Background()
+	if r.Method != "POST" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	r.ParseForm()
+	url := r.FormValue("url")
+	_, _, err := storeClient.Collection("favorites").Add(ctx, map[string]interface{}{
+		"uid":      55,
+		"filepath": url,
+	})
+	if err != nil {
+		log.Fatalf("Failed adding alovelace: %v", err)
+	}
+	iter := storeClient.Collection("favorites").Where("filepath", "==", url).Documents(ctx)
+	count := 0
+	for {
+		_, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		count++
+	}
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Write([]byte(strconv.Itoa(count)))
+}
+
+var bucket, storeClient = firebaseInit()
+
 func main() {
 	http.HandleFunc("/", IndexHandler)
 	http.HandleFunc("/upload", UploadHandler)
 	http.HandleFunc("/show", ShowHandler)
+	http.HandleFunc("/sequence", SequenceHandler)
+	http.HandleFunc("/favorite", FavoriteHandler)
 	http.ListenAndServe(":8888", nil)
 }

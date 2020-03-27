@@ -10,5 +10,27 @@
       <input type="submit" value="Upload file" />
     </form>
     <a href="/show">写真一覧へ</a>
+    <button class="favorite">Favorite</button>
+    <span class="favorite-count">0</span>
+
+    <script src="https://code.jquery.com/jquery-3.4.1.js"></script>
+    <script>
+      $(function(){
+        $(".favorite").on("click", function(){
+          $.ajax({
+            type: 'POST',
+            url: '/favorite',
+            data: {
+              "url":"aaaaa"
+            }
+          }).then(
+            data => {
+              $(".favorite-count").html(String(data));
+            },
+            error => alert("Error")
+          )
+        });
+      });
+    </script>
   </body>
 </html>
