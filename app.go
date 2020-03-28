@@ -29,13 +29,33 @@ import (
 var templates = template.Must(template.ParseFiles("templates/index.html", "templates/show.html"))
 
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
-	data := map[string]interface{}{"Title": "index"}
+	ctx := context.Background()
+	it := bucket.Objects(ctx, nil)
+	folders := []string{}
+	for {
+		attrs, err := it.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return
+		}
+		if attrs.Name[len(attrs.Name)-1:] == "/" {
+			end := len(attrs.Name) - 1
+			folders = append(folders, attrs.Name[:end])
+		}
+	}
+	data := map[string]interface{}{"Title": "index", "folders": folders}
 	renderTemplate(w, "index", data)
 }
 
 func ShowHandler(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Path[len("/show/"):]
 	ctx := context.Background()
-	it := bucket.Objects(ctx, nil)
+	prefix := id + "/"
+	it := bucket.Objects(ctx, &storage.Query{
+		Prefix: prefix,
+	})
 	links := []string{}
 	for {
 		attrs, err := it.Next()
@@ -45,7 +65,7 @@ func ShowHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			return
 		}
-		if !strings.Contains(attrs.Name, "sequence") {
+		if attrs.Name[len(attrs.Name)-1:] != "/" {
 			links = append(links, "https://storage.googleapis.com/go-pictures.appspot.com/"+attrs.Name)
 		}
 	}
@@ -234,7 +254,7 @@ func main() {
 	port := os.Getenv("PORT")
 	http.HandleFunc("/", IndexHandler)
 	http.HandleFunc("/upload", UploadHandler)
-	http.HandleFunc("/show", ShowHandler)
+	http.HandleFunc("/show/", ShowHandler)
 	http.HandleFunc("/sequence", SequenceHandler)
 	http.HandleFunc("/favorite", FavoriteHandler)
 	http.ListenAndServe(":"+port, nil)

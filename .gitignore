@@ -2,3 +2,4 @@ storage-exp-key.json
 *.jpg
 *.txt
 .idea/
+assets/app.js

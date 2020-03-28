@@ -9,7 +9,12 @@
       <input type="file" name="upload-firebase" id="upload-firebase" multiple="multiple">
       <input type="submit" value="Upload file" />
     </form>
-    <a href="/show">写真一覧へ</a>
+    <ul>
+      {{range .folders}}
+        <a href="/show/{{.}}">{{.}}</a>
+        <br/>
+      {{end}}
+    </ul>
     <button class="favorite">Favorite</button>
     <span class="favorite-count">0</span>
 
