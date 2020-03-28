@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"text/template"
@@ -27,6 +28,25 @@ import (
 )
 
 var templates = template.Must(template.ParseFiles("templates/index.html", "templates/show.html"))
+
+type File struct {
+	Link     string
+	Path     string
+	FavCount int
+}
+
+func CountFavorite(path string) (count int) {
+	iter := storeClient.Collection("favorites").Where("filepath", "==", path).Documents(context.Background())
+	_count := 0
+	for {
+		_, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		_count++
+	}
+	return _count
+}
 
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
@@ -56,7 +76,7 @@ func ShowHandler(w http.ResponseWriter, r *http.Request) {
 	it := bucket.Objects(ctx, &storage.Query{
 		Prefix: prefix,
 	})
-	links := []string{}
+	list := []File{}
 	for {
 		attrs, err := it.Next()
 		if err == iterator.Done {
@@ -66,10 +86,18 @@ func ShowHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if attrs.Name[len(attrs.Name)-1:] != "/" {
-			links = append(links, "https://storage.googleapis.com/go-pictures.appspot.com/"+attrs.Name)
+			path := attrs.Name
+			rep := regexp.MustCompile(`\W`)
+			path = rep.ReplaceAllString(path, "")
+			count := CountFavorite(path)
+			list = append(list, File{"https://storage.googleapis.com/go-pictures.appspot.com/" + attrs.Name, path, count})
 		}
 	}
-	data := map[string]interface{}{"Title": "CSFshow", "links": links}
+	data := struct {
+		List []File
+	}{
+		List: list,
+	}
 	renderTemplate(w, "show", data)
 	return
 }
@@ -184,11 +212,6 @@ func writeImageWithTemplate(w http.ResponseWriter, tmpl string, img *image.Image
 	if err := jpeg.Encode(buffer, *img, nil); err != nil {
 		log.Fatalln("Unable to encode image.")
 	}
-	//	w.Header().Set("Content-Type", "image/jpeg")
-	//	w.Header().Set("Content-Length", strconv.Itoa(len(buffer.Bytes())))
-	//	if _, err := w.Write(buffer.Bytes()); err != nil {
-	//		log.Println("unable to write image.")
-	//	}
 	str := base64.StdEncoding.EncodeToString(buffer.Bytes())
 	data := map[string]interface{}{"Title": tmpl, "Image": str}
 	renderTemplate(w, tmpl, data)
@@ -227,23 +250,15 @@ func FavoriteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	r.ParseForm()
-	url := r.FormValue("url")
+	path := r.FormValue("path")
 	_, _, err := storeClient.Collection("favorites").Add(ctx, map[string]interface{}{
 		"uid":      55,
-		"filepath": url,
+		"filepath": path,
 	})
 	if err != nil {
 		log.Fatalf("Failed adding alovelace: %v", err)
 	}
-	iter := storeClient.Collection("favorites").Where("filepath", "==", url).Documents(ctx)
-	count := 0
-	for {
-		_, err := iter.Next()
-		if err == iterator.Done {
-			break
-		}
-		count++
-	}
+	count := CountFavorite(path)
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.Write([]byte(strconv.Itoa(count)))
 }

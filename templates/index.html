@@ -3,39 +3,58 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <title>{{ .Title |html }}</title>
+    <style>
+      label{
+        display:block;
+        width:450px;
+      }
+      #upload-firebase{
+        display: none;
+      }
+      .upload{
+        border-radius: 5px;
+        box-shadow: 0 2px 5px #ccc;
+        margin-left: 40px;
+        width: 500px;
+        height: 100px;
+        line-height: 100px;
+        text-align: center;
+      }
+      .card{
+        border-radius: 5px;
+        box-shadow: 0 2px 5px #ccc;
+        width: 500px;
+        height: 100px;
+        line-height: 100px;
+        text-align: center;
+      }
+      .link{
+        color: black;
+        text-decoration: none;
+        display: block;
+      }
+      .link:visited{
+        color: black;
+      }
+    </style>
   </head>
   <body>
     <form action="/upload" enctype="multipart/form-data" method="post">
-      <input type="file" name="upload-firebase" id="upload-firebase" multiple="multiple">
-      <input type="submit" value="Upload file" />
+      <label>
+        <div class="upload">写真を選択する</div>
+        <input type="file" name="upload-firebase" id="upload-firebase" multiple="multiple">
+      </label>
+      <input type="submit" value="写真をアップロードする" />
     </form>
     <ul>
       {{range .folders}}
-        <a href="/show/{{.}}">{{.}}</a>
-        <br/>
+      <div class="card">
+        <a href="/show/{{.}}" class="link">
+              {{.}}
+        </a>
+      </div>
+      <br/>
       {{end}}
     </ul>
-    <button class="favorite">Favorite</button>
-    <span class="favorite-count">0</span>
-
-    <script src="https://code.jquery.com/jquery-3.4.1.js"></script>
-    <script>
-      $(function(){
-        $(".favorite").on("click", function(){
-          $.ajax({
-            type: 'POST',
-            url: '/favorite',
-            data: {
-              "url":"aaaaa"
-            }
-          }).then(
-            data => {
-              $(".favorite-count").html(String(data));
-            },
-            error => alert("Error")
-          )
-        });
-      });
-    </script>
   </body>
 </html>
