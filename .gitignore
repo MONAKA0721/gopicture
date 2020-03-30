@@ -3,3 +3,4 @@ storage-exp-key.json
 *.txt
 .idea/
 assets/app.js
+.env

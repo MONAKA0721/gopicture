@@ -36,25 +36,31 @@
       .link:visited{
         color: black;
       }
+      body{
+        width: 700px;
+        margin: 30px auto 0;
+      }
     </style>
   </head>
   <body>
-    <form action="/upload" enctype="multipart/form-data" method="post">
-      <label>
-        <div class="upload">写真を選択する</div>
-        <input type="file" name="upload-firebase" id="upload-firebase" multiple="multiple">
-      </label>
-      <input type="submit" value="写真をアップロードする" />
-    </form>
-    <ul>
-      {{range .folders}}
-      <div class="card">
-        <a href="/show/{{.}}" class="link">
-              {{.}}
-        </a>
-      </div>
-      <br/>
-      {{end}}
-    </ul>
+    <div class="container">
+      <form action="/upload" enctype="multipart/form-data" method="post">
+        <label>
+          <div class="upload">新しいアルバムを作成する</div>
+          <input type="file" name="upload-firebase" id="upload-firebase" multiple="multiple">
+        </label>
+        <input type="submit" value="写真をアップロードする" />
+      </form>
+      <ul>
+        {{range .folders}}
+        <div class="card">
+          <a href="/show/{{.}}" class="link">
+                {{.}}
+          </a>
+        </div>
+        <br/>
+        {{end}}
+      </ul>
+    </div>
   </body>
 </html>

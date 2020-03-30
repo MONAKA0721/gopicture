@@ -10,21 +10,19 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path"
 	"regexp"
 	"strconv"
 	"strings"
 	"text/template"
 
-	"github.com/rwcarlsen/goexif/exif"
-
+	firebase "firebase.google.com/go"
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
-
-	firebase "firebase.google.com/go"
+	"google.golang.org/api/option"
 
 	"cloud.google.com/go/firestore"
 	"cloud.google.com/go/storage"
-	"google.golang.org/api/option"
 )
 
 var templates = template.Must(template.ParseFiles("templates/index.html", "templates/show.html"))
@@ -43,6 +41,9 @@ func CountFavorite(path string) (count int) {
 		if err == iterator.Done {
 			break
 		}
+		if err != nil {
+			log.Fatalln(err)
+		}
 		_count++
 	}
 	return _count
@@ -60,12 +61,20 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			return
 		}
-		if attrs.Name[len(attrs.Name)-1:] == "/" {
-			end := len(attrs.Name) - 1
-			folders = append(folders, attrs.Name[:end])
+		end := strings.Index(attrs.Name, "/")
+		folders = append(folders, attrs.Name[:end])
+	}
+	m := make(map[string]bool)
+	uniqFolders := []string{}
+
+	for _, ele := range folders {
+		if !m[ele] {
+			m[ele] = true
+			uniqFolders = append(uniqFolders, ele)
 		}
 	}
-	data := map[string]interface{}{"Title": "index", "folders": folders}
+
+	data := map[string]interface{}{"Title": "index", "folders": uniqFolders}
 	renderTemplate(w, "index", data)
 }
 
@@ -116,7 +125,6 @@ func SequenceHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		if strings.Contains(attrs.Name, "sequence/D") {
 			links = append(links, "https://storage.googleapis.com/go-pictures.appspot.com/"+attrs.Name)
-			print(attrs.Name)
 		}
 	}
 	data := map[string]interface{}{"Title": "CSFshow", "links": links}
@@ -126,10 +134,10 @@ func SequenceHandler(w http.ResponseWriter, r *http.Request) {
 
 // UploadHandler は Cloud Storage for Firebase にアップロードするための関数です
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
-	// if r.Method = "POST" {
-	// 	http.Error(w, "Allowed POST method only", http.StatusMethodNotAllowed)
-	// 	return
-	// }
+	if r.Method != "POST" {
+		http.Error(w, "Allowed POST method only", http.StatusMethodNotAllowed)
+		return
+	}
 
 	defer storeClient.Close()
 	ctx := context.Background()
@@ -158,14 +166,13 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		contentType := ""
 		fileData, err := ioutil.ReadAll(buf)
 		if err != nil {
-			print("error")
 			contentType = "application/octet-stream"
 		} else {
 			contentType = http.DetectContentType(fileData)
-			print(contentType)
 		}
-
-		writer := bucket.Object(remoteFilename).NewWriter(ctx)
+		folderName := "test2"
+		remotePath := path.Join(folderName, remoteFilename)
+		writer := bucket.Object(remotePath).NewWriter(ctx)
 		writer.ObjectAttrs.ContentType = contentType
 		writer.ObjectAttrs.CacheControl = "no-cache"
 		writer.ObjectAttrs.ACL = []storage.ACLRule{
@@ -178,27 +185,8 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		if _, err = writer.Write(fileData); err != nil {
 			log.Fatalln(err)
 		}
-
-		x, err := exif.Decode(buf2)
-		timeStr := ""
-		if err != nil {
-			print("error")
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		} else {
-			time, _ := x.DateTime()
-			timeStr = time.String()
-			println(time.String())
-		}
-		_, _, err = storeClient.Collection("links").Add(ctx, map[string]interface{}{
-			"filename": remoteFilename,
-			"date":     timeStr,
-		})
-		if err != nil {
-			log.Fatalf("Failed adding alovelace: %v", err)
-		}
-
 	}
-	http.Redirect(w, r, "/show", http.StatusFound)
+	http.Redirect(w, r, "/", http.StatusFound)
 }
 
 func renderTemplate(w http.ResponseWriter, tmpl string, data interface{}) {
@@ -223,6 +211,7 @@ func firebaseInit() (bkthdl *storage.BucketHandle, sc *firestore.Client) {
 	ctx := context.Background()
 	opt := option.WithCredentialsJSON([]byte(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")))
 	app, err := firebase.NewApp(ctx, config, opt)
+	// app, err := firebase.NewApp(ctx, config)
 	if err != nil {
 		log.Fatalln(err)
 	}
