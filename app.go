@@ -206,9 +206,11 @@ func writeImageWithTemplate(w http.ResponseWriter, tmpl string, img *image.Image
 	renderTemplate(w, tmpl, data)
 }
 func firebaseInit() (bkthdl *storage.BucketHandle, sc *firestore.Client) {
-	err := godotenv.Load(fmt.Sprintf("envfiles/%s.env", "develop"))
-	if err != nil {
-		log.Fatalln(err)
+	if os.Getenv("GO_ENV") == "dev" {
+		err := godotenv.Load("envfiles/dev.env")
+		if err != nil {
+			log.Fatalln(err)
+		}
 	}
 	config := &firebase.Config{
 		StorageBucket: "go-pictures.appspot.com",
