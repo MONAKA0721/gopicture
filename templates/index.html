@@ -2,11 +2,11 @@
 <html>
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <script src="https://kit.fontawesome.com/81a1ab3943.js" crossorigin="anonymous"></script>
     <title>{{ .Title |html }}</title>
     <style>
       label{
         display:block;
-        width:450px;
       }
       #upload-firebase{
         display: none;
@@ -14,8 +14,6 @@
       .upload{
         border-radius: 5px;
         box-shadow: 0 2px 5px #ccc;
-        margin-left: 40px;
-        width: 500px;
         height: 100px;
         line-height: 100px;
         text-align: center;
@@ -23,7 +21,6 @@
       .card{
         border-radius: 5px;
         box-shadow: 0 2px 5px #ccc;
-        width: 500px;
         height: 100px;
         line-height: 100px;
         text-align: center;
@@ -37,21 +34,54 @@
         color: black;
       }
       body{
-        width: 700px;
+        width: 500px;
         margin: 30px auto 0;
+      }
+      form{
+        display: none;
+      }
+      button{
+        width: 100%;
+        display: inline-block;
+        padding: 7px 20px;
+        border: 0;
+        border-radius: 25px;
+        text-decoration: none;
+        color: #FFF;
+        background-image: linear-gradient(45deg, #FFC107 0%, #ff8b5f 100%);
+        transition: .4s;
+      }
+      button:hover{
+        background-image: linear-gradient(45deg, #FFC107 0%, #f76a35 100%);
+      }
+      input[type="submit"]{
+        background-color: orange;
+        border-radius: 5px;
+        border: 0;
+        color:white;
+        height: 30px;
+      }
+      .right{
+        text-align: right;
+      }
+      .folders{
+        margin-top: 20px;
       }
     </style>
   </head>
   <body>
     <div class="container">
-      <form action="/upload" enctype="multipart/form-data" method="post">
-        <label>
-          <div class="upload">新しいアルバムを作成する</div>
-          <input type="file" name="upload-firebase" id="upload-firebase" multiple="multiple">
-        </label>
-        <input type="submit" value="写真をアップロードする" />
-      </form>
-      <ul>
+      <button>新しいアルバムを作成する</button>
+        <form action="/upload" enctype="multipart/form-data" method="post">
+          <label>
+            <div class="upload">写真を選択する</div>
+            <input type="file" name="upload-firebase" id="upload-firebase" multiple="multiple">
+          </label>
+          <div class="right">
+            <input type="submit" value="&#xf382; 写真をアップロードする" class="fas"/>
+          </div>
+        </form>
+      <div class="folders">
         {{range .folders}}
         <div class="card">
           <a href="/show/{{.}}" class="link">
@@ -60,7 +90,15 @@
         </div>
         <br/>
         {{end}}
-      </ul>
+      </div>
     </div>
+    <script src="https://code.jquery.com/jquery-3.4.1.js"></script>
+    <script type="text/javascript">
+      $(function () {
+        $('button').on('click', () => {
+          $('form').slideToggle();
+        });
+      });
+    </script>
   </body>
 </html>
