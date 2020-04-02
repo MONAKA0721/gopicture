@@ -86,7 +86,7 @@
       <button id="btn">新しいアルバムを作成する</button>
         <form action="/upload" enctype="multipart/form-data" method="post">
           <label for="upload-firebase">アルバムに入れる写真を選んでください</label>
-          <input type="file" name="upload-firebase" id="upload-firebase" multiple="multiple" accept="image/png, image/jpeg" required/>
+          <input type="file" name="upload-firebase" id="upload-firebase" multiple="multiple" accept="image/*" required/>
           <div id="input-album-name">
             <label for="folder-name">アルバム名</label>
             <input type="text" name="album" value="" id="folder-name" required pattern="[^/]+">
