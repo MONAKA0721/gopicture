@@ -141,28 +141,25 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Allowed POST method only", http.StatusMethodNotAllowed)
 		return
 	}
+	r.ParseMultipartForm(32 << 20)
+	fhs := r.MultipartForm.File["upload-firebase"]
 	ctx := context.Background()
-	reader, err := r.MultipartReader()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	for {
-		part, err := reader.NextPart()
-		if err == io.EOF {
-			break
+	for _, fh := range fhs {
+		f, err := fh.Open()
+		if err != nil {
+			fmt.Println(err)
+			return
 		}
-		defer part.Close()
+		defer f.Close()
 		buf := bytes.NewBuffer(nil)
 		buf2 := bytes.NewBuffer(nil)
 		bufWriter := io.MultiWriter(buf, buf2)
-		io.Copy(bufWriter, part)
-		// ファイル名がない場合はスキップする
-		if part.FileName() == "" {
+		io.Copy(bufWriter, f)
+
+		if fh.Filename == "" {
 			continue
 		}
-
-		remoteFilename := part.FileName()
+		remoteFilename := fh.Filename
 
 		contentType := ""
 		fileData, err := ioutil.ReadAll(buf)
@@ -171,7 +168,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			contentType = http.DetectContentType(fileData)
 		}
-		folderName := "test2"
+		folderName := r.FormValue("album")
 		remotePath := path.Join(folderName, remoteFilename)
 		writer := bucket.Object(remotePath).NewWriter(ctx)
 		writer.ObjectAttrs.ContentType = contentType
