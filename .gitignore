@@ -1,6 +1,4 @@
 storage-exp-key.json
-*.jpg
-*.txt
 .idea/
 assets/javascript/app.js
 envfiles/
