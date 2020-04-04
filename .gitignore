@@ -2,3 +2,4 @@ storage-exp-key.json
 .idea/
 assets/javascript/app.js
 envfiles/
+tmp/

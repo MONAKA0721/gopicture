@@ -5,6 +5,9 @@ $ docker-compose build
 
 # バックグラウンドでアプリを立ち上げ
 $ docker-compose up -d
+
+# チェック用にコンテナの中に入る
+$ docker run --rm -it gopicture-image /bin/sh
 ```
 ブラウザでアクセス  
 http://localhost:8888
