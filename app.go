@@ -273,6 +273,7 @@ var bucket, storeClient = firebaseInit()
 
 func main() {
 	port := os.Getenv("PORT")
+	http.Handle("/statics/", http.StripPrefix("/statics/", http.FileServer(http.Dir("statics/"))))
 	http.HandleFunc("/", IndexHandler)
 	http.HandleFunc("/upload", UploadHandler)
 	http.HandleFunc("/show/", ShowHandler)

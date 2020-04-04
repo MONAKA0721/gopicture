@@ -1,0 +1,10 @@
+  .picture{
+    display: inline-block;
+    width: 100px;
+  }
+  .info{
+    text-align: center;
+  }
+  .favorite{
+    display: inline-block;
+  }

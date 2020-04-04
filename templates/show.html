@@ -3,19 +3,8 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <script src="https://kit.fontawesome.com/81a1ab3943.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" type="text/css" href="../statics/css/show.css">
     <title>Show</title>
-    <style media="screen">
-      .picture{
-        display: inline-block;
-        width: 100px;
-      }
-      .info{
-        text-align: center;
-      }
-      .favorite{
-        display: inline-block;
-      }
-    </style>
   </head>
   <body>
     {{range .List}}
@@ -31,25 +20,6 @@
     {{end}}
 
     <script src="https://code.jquery.com/jquery-3.4.1.js"></script>
-    <script>
-      $(function(){
-        $('div[id^="favorite"]').on("click", function(){
-          var path = $(this).attr('id').replace('favorite-', '');
-          $.ajax({
-            type: 'POST',
-            url: '/favorite',
-            data: {
-              "path": path
-            }
-          }).then(
-            data => {
-              id = '#favorite-count-'+path;
-              $(id).html(String(data));
-            },
-            error => alert("Error")
-          )
-        });
-      });
-    </script>
+    <script src="../statics/js/show.js"></script>
   </body>
 </html>
