@@ -1,0 +1,10 @@
+version: '3'
+services:
+  app:
+    build: .
+    image: gopicture-image
+    container_name: gopicturel
+    ports:
+      - 8888:8888
+    environment:
+      GO_ENV: dev
