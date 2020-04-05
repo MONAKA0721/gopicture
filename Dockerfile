@@ -11,4 +11,4 @@ COPY go.sum .
 RUN go mod download
 COPY ./ .
 
-CMD fresh
+CMD fresh -c my_runner.conf
