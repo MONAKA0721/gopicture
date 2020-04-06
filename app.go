@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"github.com/jinzhu/gorm"
+   _ "github.com/go-sql-driver/mysql"
 	"image"
 	"image/jpeg"
 	"io"
@@ -15,6 +17,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 	"text/template"
 
 	firebase "firebase.google.com/go"
@@ -34,6 +37,15 @@ type File struct {
 	Link     string
 	Path     string
 	FavCount int
+}
+
+//Userテーブル準備
+type User struct {
+    Id int64 `gorm:"primary_key"`
+    Name string `sql:"size:255"`
+    CreatedAt time.Time
+    UpdatedAT time.Time
+    DeletedAt time.Time
 }
 
 func CountFavorite(path string) (count int) {
@@ -271,7 +283,35 @@ func FavoriteHandler(w http.ResponseWriter, r *http.Request) {
 
 var bucket, storeClient = firebaseInit()
 
+//GORM関連のコード
+func GetDBConn() *gorm.DB {
+   db, err := gorm.Open(GetDBConfig())
+   if err != nil {
+			fmt.Println(err)
+   }
+
+   db.LogMode(true)
+   return db
+}
+
+func GetDBConfig() (string, string) {
+   DBMS := "mysql"
+   USER := "root"
+   PASS := ""
+   PROTOCOL := ""
+   DBNAME := "gopicture"
+   OPTION := "charset=utf8&parseTime=True&loc=Local"
+
+   CONNECT := USER + ":" + PASS + "@" + PROTOCOL + "/" + DBNAME + "?" + OPTION
+
+   return DBMS, CONNECT
+}
+
 func main() {
+	//データベース接続、テーブル作成
+	db := GetDBConn()
+  db.AutoMigrate(&User{})
+
 	port := os.Getenv("PORT")
 	http.Handle("/statics/", http.StripPrefix("/statics/", http.FileServer(http.Dir("statics/"))))
 	http.HandleFunc("/", IndexHandler)
