@@ -3,10 +3,8 @@ services:
   mysql:
     container_name: gopicture_db
     image: mysql:latest
-    volumes:
-      - ./mysql/my.cnf:/etc/mysql/conf.d/my.cnf
-    environment:
-      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+    restart: always
+    env_file: ./envfiles/docker.env
     ports:
       - 3306:3306
   app:

@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	"github.com/jinzhu/gorm"
-   _ "github.com/go-sql-driver/mysql"
 	"image"
 	"image/jpeg"
 	"io"
@@ -17,8 +15,10 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 	"text/template"
+
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/jinzhu/gorm"
 
 	firebase "firebase.google.com/go"
 	"golang.org/x/net/context"
@@ -41,11 +41,8 @@ type File struct {
 
 //Userテーブル準備
 type User struct {
-    Id int64 `gorm:"primary_key"`
-    Name string `sql:"size:255"`
-    CreatedAt time.Time
-    UpdatedAT time.Time
-    DeletedAt time.Time
+	gorm.Model
+	Name string
 }
 
 func CountFavorite(path string) (count int) {
@@ -285,39 +282,36 @@ var bucket, storeClient = firebaseInit()
 
 //GORM関連のコード
 func GetDBConn() *gorm.DB {
-   db, err := gorm.Open(GetDBConfig())
-   if err != nil {
-			fmt.Println(err)
-   }
+	db, err := gorm.Open(GetDBConfig())
+	if err != nil {
+		fmt.Println(err)
+	}
 
-   db.LogMode(true)
-   return db
+	db.LogMode(true)
+	return db
 }
 
 func GetDBConfig() (string, string) {
-   DBMS := "mysql"
-   USER := "root"
-   PASS := ""
-   PROTOCOL := ""
-   DBNAME := "gopicture"
-   OPTION := "charset=utf8&parseTime=True&loc=Local"
-
-   CONNECT := USER + ":" + PASS + "@" + PROTOCOL + "/" + DBNAME + "?" + OPTION
-
-   return DBMS, CONNECT
+	DBMS := "mysql"
+	USER := os.Getenv("MYSQL_USER")
+	PASS := os.Getenv("MYSQL_PASSWORD")
+	PROTOCOL := "tcp(mysql:3306)"
+	DBNAME := os.Getenv("MYSQL_DATABASE")
+	CONNECT := USER + ":" + PASS + "@" + PROTOCOL + "/" + DBNAME
+	return DBMS, CONNECT
 }
 
 func main() {
-	//データベース接続、テーブル作成
 	db := GetDBConn()
-  db.AutoMigrate(&User{})
+	db.AutoMigrate(&User{})
 
-	port := os.Getenv("PORT")
 	http.Handle("/statics/", http.StripPrefix("/statics/", http.FileServer(http.Dir("statics/"))))
 	http.HandleFunc("/", IndexHandler)
 	http.HandleFunc("/upload", UploadHandler)
 	http.HandleFunc("/show/", ShowHandler)
 	http.HandleFunc("/sequence", SequenceHandler)
 	http.HandleFunc("/favorite", FavoriteHandler)
+
+	port := os.Getenv("PORT")
 	http.ListenAndServe(":"+port, nil)
 }
