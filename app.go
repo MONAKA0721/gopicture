@@ -2,7 +2,10 @@ package main
 
 import (
 	"bytes"
+	"crypto/rand"
+	"encoding/base32"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"image"
 	"image/jpeg"
@@ -10,6 +13,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"regexp"
@@ -22,21 +26,42 @@ import (
 
 	firebase "firebase.google.com/go"
 	"golang.org/x/net/context"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 	"google.golang.org/api/iterator"
+	oauthapi "google.golang.org/api/oauth2/v2"
+	plus "google.golang.org/api/plus/v1"
 
 	"cloud.google.com/go/firestore"
 	"cloud.google.com/go/storage"
-	"google.golang.org/api/option"
-
+	"github.com/gofrs/uuid"
+	"github.com/gorilla/sessions"
 	"github.com/joho/godotenv"
+	"google.golang.org/api/option"
 )
 
 var templates = template.Must(template.ParseFiles("templates/index.html", "templates/show.html"))
+
+var (
+	OAuthConfig  *oauth2.Config
+	SessionStore sessions.Store
+)
+
+const (
+	defaultSessionID        = "default"
+	oauthFlowRedirectKey    = "redirect"
+	oauthTokenSessionKey    = "oauth_token"
+	googleProfileSessionKey = "google_profile"
+)
 
 type File struct {
 	Link     string
 	Path     string
 	FavCount int
+}
+
+type Profile struct {
+	ID, DisplayName, ImageURL string
 }
 
 //Userテーブル準備
@@ -61,7 +86,54 @@ func CountFavorite(path string) (count int) {
 	return _count
 }
 
+func configureOAuthClient(clientID, clientSecret string) *oauth2.Config {
+	redirectURL := os.Getenv("OAUTH2_CALLBACK")
+	if redirectURL == "" {
+		redirectURL = "http://localhost:8888/oauth2callback"
+	}
+	return &oauth2.Config{
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
+		RedirectURL:  redirectURL,
+		Scopes:       []string{"email", "profile"},
+		Endpoint:     google.Endpoint,
+	}
+}
+
+func init() {
+	OAuthConfig = configureOAuthClient(os.Getenv("CLIENT_ID"), os.Getenv("CLIENT_SECRET"))
+	// Configure storage method for session-wide information.
+	// Update "something-very-secret" with a hard to guess string or byte sequence.
+	// 乱数生成
+	b := make([]byte, 48)
+	_, err := io.ReadFull(rand.Reader, b)
+	if err != nil {
+		panic(err)
+	}
+	str := strings.TrimRight(base32.StdEncoding.EncodeToString(b), "=")
+	cookieStore := sessions.NewCookieStore([]byte(str))
+	cookieStore.Options = &sessions.Options{
+		HttpOnly: true,
+	}
+	SessionStore = cookieStore
+}
+
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
+	d := struct {
+		AuthEnabled bool
+		Profile     *oauthapi.Userinfoplus
+		LoginURL    string
+		LogoutURL   string
+	}{
+		AuthEnabled: OAuthConfig != nil,
+		LoginURL:    "/login?redirect=" + r.URL.RequestURI(),
+		LogoutURL:   "/logout?redirect=" + r.URL.RequestURI(),
+	}
+	if d.AuthEnabled {
+		// Ignore any errors.
+		d.Profile = profileFromSession(r)
+	}
+	fmt.Print(d.Profile)
 	ctx := context.Background()
 	it := bucket.Objects(ctx, nil)
 	folders := []string{}
@@ -86,7 +158,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	data := map[string]interface{}{"Title": "index", "folders": uniqFolders}
+	data := map[string]interface{}{"Title": "index", "folders": uniqFolders, "profile": d.Profile}
 	renderTemplate(w, "index", data)
 }
 
@@ -301,16 +373,142 @@ func GetDBConfig() (string, string) {
 	return DBMS, CONNECT
 }
 
+// validateRedirectURL checks that the URL provided is valid.
+// If the URL is missing, redirect the user to the application's root.
+// The URL must not be absolute (i.e., the URL must refer to a path within this
+// application).
+func validateRedirectURL(path string) (string, error) {
+	if path == "" {
+		return "/", nil
+	}
+
+	// Ensure redirect URL is valid and not pointing to a different server.
+	parsedURL, err := url.Parse(path)
+	if err != nil {
+		return "/", err
+	}
+	if parsedURL.IsAbs() {
+		return "/", errors.New("URL must not be absolute")
+	}
+	return path, nil
+}
+
+// loginHandler initiates an OAuth flow to authenticate the user.
+func loginHandler(w http.ResponseWriter, r *http.Request) {
+	sessionID := uuid.Must(uuid.NewV4()).String()
+
+	oauthFlowSession, err := SessionStore.New(r, sessionID)
+	if err != nil {
+		fmt.Println(err)
+	}
+	oauthFlowSession.Options.MaxAge = 10 * 60 // 10 minutes
+
+	redirectURL, err := validateRedirectURL(r.FormValue("redirect"))
+	if err != nil {
+		fmt.Println(err)
+	}
+	oauthFlowSession.Values[oauthFlowRedirectKey] = redirectURL
+
+	if err := oauthFlowSession.Save(r, w); err != nil {
+		fmt.Println(err)
+	}
+
+	// Use the session ID for the "state" parameter.
+	// This protects against CSRF (cross-site request forgery).
+	// See https://godoc.org/golang.org/x/oauth2#Config.AuthCodeURL for more detail.
+	url := OAuthConfig.AuthCodeURL(sessionID, oauth2.ApprovalForce,
+		oauth2.AccessTypeOnline)
+	http.Redirect(w, r, url, http.StatusFound)
+}
+
+func OAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
+	oauthFlowSession, err := SessionStore.Get(r, r.FormValue("state"))
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	redirectURL, ok := oauthFlowSession.Values[oauthFlowRedirectKey].(string)
+	// Validate this callback request came from the app.
+	if !ok {
+		fmt.Println(err)
+	}
+
+	session, err := SessionStore.New(r, defaultSessionID)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	//パラメータからアクセスコードを読み取り
+	code := r.URL.Query()["code"]
+	if code == nil || len(code) == 0 {
+		fmt.Fprint(w, "Invalid Parameter")
+	}
+	//いろいろライブラリが頑張って
+	ctx := context.Background()
+	tok, err := OAuthConfig.Exchange(ctx, code[0])
+	if err != nil {
+		fmt.Fprintf(w, "OAuth Error:%v", err)
+	}
+	//APIクライアントができて
+	client := OAuthConfig.Client(ctx, tok)
+	//Userinfo APIをGetしてDoして
+	svr, _ := oauthapi.New(client)
+	ui, err := svr.Userinfo.Get().Do()
+	if err != nil {
+		fmt.Fprintf(w, "OAuth Error:%v", err)
+	} else {
+		//メールアドレス取得！
+		fmt.Println(ui.Email)
+	}
+	session.Values[oauthTokenSessionKey] = tok
+	// Strip the profile to only the fields we need. Otherwise the struct is too big.
+	session.Values[googleProfileSessionKey] = ui
+	if err := session.Save(r, w); err != nil {
+		fmt.Println(err)
+	}
+	http.Redirect(w, r, redirectURL, http.StatusFound)
+}
+
+// stripProfile returns a subset of a plus.Person.
+func stripProfile(p *plus.Person) *Profile {
+	return &Profile{
+		ID:          p.Id,
+		DisplayName: p.DisplayName,
+		ImageURL:    p.Image.Url,
+	}
+}
+
+// profileFromSession retreives the Google+ profile from the default session.
+// Returns nil if the profile cannot be retreived (e.g. user is logged out).
+func profileFromSession(r *http.Request) *oauthapi.Userinfoplus {
+	session, err := SessionStore.Get(r, defaultSessionID)
+	if err != nil {
+		return nil
+	}
+
+	tok, ok := session.Values[oauthTokenSessionKey].(*oauth2.Token)
+	if !ok || !tok.Valid() {
+		return nil
+	}
+	ui, ok := session.Values[googleProfileSessionKey].(*oauthapi.Userinfoplus)
+	if !ok {
+		return nil
+	}
+	return ui
+}
+
 func main() {
 	db := GetDBConn()
 	db.AutoMigrate(&User{})
 
 	http.Handle("/statics/", http.StripPrefix("/statics/", http.FileServer(http.Dir("statics/"))))
 	http.HandleFunc("/", IndexHandler)
+	http.HandleFunc("/login", loginHandler)
 	http.HandleFunc("/upload", UploadHandler)
 	http.HandleFunc("/show/", ShowHandler)
 	http.HandleFunc("/sequence", SequenceHandler)
 	http.HandleFunc("/favorite", FavoriteHandler)
+	http.HandleFunc("/oauth2callback", OAuthCallbackHandler)
 
 	port := os.Getenv("PORT")
 	http.ListenAndServe(":"+port, nil)
