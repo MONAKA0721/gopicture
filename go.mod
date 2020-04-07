@@ -7,6 +7,8 @@ require (
 	cloud.google.com/go/storage v1.6.0
 	firebase.google.com/go v3.12.0+incompatible
 	github.com/clbanning/x2j v0.0.0-20191024224557-825249438eec // indirect
+	github.com/gofrs/uuid v3.2.0+incompatible
+	github.com/gorilla/sessions v1.2.0
 	github.com/howeyc/fsnotify v0.9.0 // indirect
 	github.com/joho/godotenv v1.3.0
 	github.com/mattn/go-colorable v0.1.6 // indirect
@@ -20,9 +22,10 @@ require (
 	github.com/stretchr/tracer v0.0.0-20140124184152-66d3696bba97 // indirect
 	github.com/ugorji/go v1.1.7 // indirect
 	golang.org/x/net v0.0.0-20200226121028-0de0cce0169b
+	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sys v0.0.0-20200323222414-85ca7c5b95cd // indirect
 	golang.org/x/tools v0.0.0-20200326210457-5d86d385bf88 // indirect
 	google.golang.org/api v0.20.0
-	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
+	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22
 	gopkg.in/yaml.v2 v2.2.8 // indirect
 )
