@@ -21,7 +21,7 @@ func Init(isReset bool) {
 	if isReset {
 		db.DropTableIfExists()
 	}
-	db.AutoMigrate(models.User{})
+	db.AutoMigrate(models.User{}, models.Album{}, models.Picture{})
 }
 
 // GetDB returns database connection
