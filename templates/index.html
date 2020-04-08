@@ -3,14 +3,14 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-    <script src="https://kit.fontawesome.com/81a1ab3943.js" crossorigin="anonymous"></script>
+    <!-- <script src="https://kit.fontawesome.com/81a1ab3943.js" crossorigin="anonymous"></script> -->
     <meta name="google-site-verification" content="po8157oyj1IXaaMxeAi_p5sJOJ9TJtPqYZAIHN800pQ" />
     <link rel="stylesheet" type="text/css" href="../statics/css/index.css">
     <title>{{ .Title |html }}</title>
   </head>
   <body>
     <a href="/login">ログイン</a>
-      {{if .profile}}
+      <!-- {{if .profile}}
         <form method="post" action="{{.LogoutURL}}" class="navbar-form navbar-right">
           <button class="btn btn-default">Log out</button>
         </form>
@@ -24,7 +24,7 @@
         <div class="navbar-text navbar-right">
           <a href="{{.LoginURL}}">Log in</a>
         </div>
-      {{end}}
+      {{end}} -->
     <div class="container">
       <button id="btn">新しいアルバムを作成する</button>
         <form action="/upload" enctype="multipart/form-data" method="post">
