@@ -3,7 +3,6 @@ package main
 import(
   "strings"
   "net/http"
-  "fmt"
   "encoding/gob"
   "golang.org/x/net/context"
   "google.golang.org/api/iterator"

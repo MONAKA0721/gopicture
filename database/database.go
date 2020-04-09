@@ -6,7 +6,6 @@ import (
 	"github.com/jinzhu/gorm"
 
 	"gopicture/config"
-	"gopicture/models"
 )
 
 var db *gorm.DB
@@ -21,11 +20,11 @@ func Init(isReset bool) {
 	if isReset {
 		db.DropTableIfExists()
 	}
-	db.AutoMigrate(models.User{}, models.Album{}, models.Picture{})
 }
 
 // GetDB returns database connection
 func GetDB() *gorm.DB {
+	db, _ = gorm.Open(config.GetDBConfig())
 	return db
 }
 

@@ -1,6 +1,8 @@
 package models
 
 import (
+	"gopicture/database"
+
 	"github.com/jinzhu/gorm"
 )
 
@@ -11,4 +13,20 @@ type User struct {
 	Email       string    `json:"email" gorm:"unique;not null"`
 	Albums      []Album   `gorm:"many2many:user_albums;"`
 	FavPictures []Picture `gorm:"many2many:user_fav_pictures;"`
+}
+
+// FindByEmail finds a user by email
+func (u *User) FindByEmail(email string) (err error) {
+	db := database.GetDB()
+	return db.Where("email = ?", email).First(u).Error
+}
+
+func (u *User) First() (err error) {
+	db := database.GetDB()
+	return db.First(u).Error
+}
+
+func (u *User) FirstOrCreate(email string, name string) (err error) {
+	db := database.GetDB()
+	return db.Where(User{Email: email}).Attrs(User{Name: name}).FirstOrCreate(u).Error
 }
