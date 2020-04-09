@@ -29,6 +29,7 @@ func main() {
 	http.Handle("/statics/", http.StripPrefix("/statics/", http.FileServer(http.Dir("statics/"))))
 	http.HandleFunc("/", IndexHandler)
 	http.HandleFunc("/login", loginHandler)
+	http.HandleFunc("/logout", logoutHandler)
 	http.HandleFunc("/upload", UploadHandler)
 	http.HandleFunc("/show/", ShowHandler)
 	http.HandleFunc("/favorite", FavoriteHandler)

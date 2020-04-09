@@ -3,7 +3,8 @@ package main
 import(
   "strings"
   "net/http"
-
+  "fmt"
+  "encoding/gob"
   "golang.org/x/net/context"
   "google.golang.org/api/iterator"
   "golang.org/x/oauth2"
@@ -15,6 +16,12 @@ var (
 	OAuthConfig  *oauth2.Config
 	SessionStore sessions.Store
 )
+
+func init() {
+	// Gob encoding for gorilla/sessions
+	gob.Register(&oauth2.Token{})
+	gob.Register(&oauthapi.Userinfoplus{})
+}
 
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	d := struct {
@@ -55,7 +62,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	data := map[string]interface{}{"Title": "index", "folders": uniqFolders}
+	data := map[string]interface{}{"Title": "index", "folders": uniqFolders, "userinfo": d.UserInfo, "LogoutURL": d.LogoutURL}
 	renderTemplate(w, "index", data)
 }
 
@@ -66,7 +73,6 @@ func profileFromSession(r *http.Request) *oauthapi.Userinfoplus {
 	if err != nil {
 		return nil
 	}
-
 	tok, ok := session.Values[oauthTokenSessionKey].(*oauth2.Token)
 	if !ok || !tok.Valid() {
 		return nil

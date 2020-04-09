@@ -9,46 +9,43 @@
     <title>{{ .Title |html }}</title>
   </head>
   <body>
-    <a href="/login">ログイン</a>
-      <!-- {{if .profile}}
-        <form method="post" action="{{.LogoutURL}}" class="navbar-form navbar-right">
-          <button class="btn btn-default">Log out</button>
-        </form>
-        <div class="navbar-text navbar-right">
-          {{if .Profile.ImageURL}}
-            <img class="img-circle" width="24" src="{{.Profile.ImageURL}}">
-          {{end}}
-          <span>{{.Profile.DisplayName}}</span>
-        </div>
-      {{else}}
-        <div class="navbar-text navbar-right">
-          <a href="{{.LoginURL}}">Log in</a>
-        </div>
-      {{end}} -->
-    <div class="container">
-      <button id="btn">新しいアルバムを作成する</button>
-        <form action="/upload" enctype="multipart/form-data" method="post">
-          <label for="upload-firebase">アルバムに入れる写真を選んでください</label>
-          <input type="file" name="upload-firebase" id="upload-firebase" multiple="multiple" accept="image/*" required/>
-          <div id="input-album-name">
-            <label for="folder-name">アルバム名</label>
-            <input type="text" name="album" value="" id="folder-name" required pattern="[^/]+">
-            <small>「/」を含むアルバム名をつけることはできません</small>
-          </div>
-          <div class="right">
-            <input type="submit" value="&#xf382; 写真をアップロードする" class="fas"/>
-          </div>
-        </form>
-      <div class="folders">
-        {{range .folders}}
-        <div class="card">
-          <a href="/show/{{.}}" class="link">
-                {{.}}
-          </a>
-        </div>
-        {{end}}
+    {{if .userinfo}}
+      <form method="post" action="{{.LogoutURL}}" class="navbar-form navbar-right">
+        <button>ログアウト</button>
+      </form>
+      <div class="navbar-text navbar-right">
+        <span>{{.userinfo.Email}}</span>
+        <span>{{.userinfo.Name}}</span>
       </div>
-    </div>
+      <div class="container">
+        <button id="btn">新しいアルバムを作成する</button>
+          <form action="/upload" enctype="multipart/form-data" method="post">
+            <label for="upload-firebase">アルバムに入れる写真を選んでください</label>
+            <input type="file" name="upload-firebase" id="upload-firebase" multiple="multiple" accept="image/*" required/>
+            <div id="input-album-name">
+              <label for="folder-name">アルバム名</label>
+              <input type="text" name="album" value="" id="folder-name" required pattern="[^/]+">
+              <small>「/」を含むアルバム名をつけることはできません</small>
+            </div>
+            <div class="right">
+              <input type="submit" value="&#xf382; 写真をアップロードする" class="fas"/>
+            </div>
+          </form>
+        <div class="folders">
+          {{range .folders}}
+          <div class="card">
+            <a href="/show/{{.}}" class="link">
+                  {{.}}
+            </a>
+          </div>
+          {{end}}
+        </div>
+      </div>
+    {{else}}
+      <div class="navbar-text navbar-right">
+        <a href="/login">Log in</a>
+      </div>
+    {{end}}
     <script src="https://code.jquery.com/jquery-3.4.1.js"></script>
     <script src="../statics/js/index.js"></script>
   </body>
