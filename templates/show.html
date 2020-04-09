@@ -7,18 +7,19 @@
     <title>Show</title>
   </head>
   <body>
-    {{range .List}}
-      <div class="picture">
-        <img src="{{.Link}}" height="100px" width="100px"/>
-        <div class="info">
-          <div id="favorite-{{.Path}}" class="favorite">
-            <i class="far fa-heart"></i>
+    <div class="container">
+      {{range .List}}
+        <div class="picture">
+          <img src="{{.Link}}" style="width:100%;height:100%;">
+          <div class="info">
+            <div id="favorite-{{.Path}}" class="favorite">
+              <i class="far fa-heart"style="color:violet;"></i>
+            </div>
+            <span id="favorite-count-{{.Path}}" style="color:white;">{{.FavCount}}</span>
           </div>
-          <span id="favorite-count-{{.Path}}">{{.FavCount}}</span>
         </div>
-      </div>
-    {{end}}
-
+      {{end}}
+    </div>
     <script src="https://code.jquery.com/jquery-3.4.1.js"></script>
     <script src="../statics/js/show.js"></script>
   </body>
