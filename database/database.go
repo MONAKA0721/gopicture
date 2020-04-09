@@ -11,7 +11,7 @@ import (
 var db *gorm.DB
 
 // Init initializes database
-func Init(isReset bool) {
+func Init(isReset bool, models ...interface{}) {
 	db, err := gorm.Open(config.GetDBConfig())
 	if err != nil {
 		fmt.Println(err)
@@ -20,6 +20,7 @@ func Init(isReset bool) {
 	if isReset {
 		db.DropTableIfExists()
 	}
+	db.AutoMigrate(models...)
 }
 
 // GetDB returns database connection

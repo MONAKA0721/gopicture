@@ -8,6 +8,7 @@ import (
 
 	"gopicture/config"
 	"gopicture/database"
+	"gopicture/models"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -23,7 +24,7 @@ func renderTemplate(w http.ResponseWriter, tmpl string, data interface{}) {
 var bucket, storeClient = config.FirebaseInit(os.Getenv("GO_ENV"))
 
 func main() {
-	database.Init(false)
+	database.Init(false, models.User{}, models.Album{}, models.Picture{})
 	defer database.Close()
 
 	http.Handle("/statics/", http.StripPrefix("/statics/", http.FileServer(http.Dir("statics/"))))

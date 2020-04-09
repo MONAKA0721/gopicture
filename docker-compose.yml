@@ -3,7 +3,10 @@ services:
   mysql:
     container_name: gopicture_db
     image: mysql:latest
+    command: mysqld --character-set-server=utf8 --collation-server=utf8_unicode_ci
     restart: always
+    volumes:
+      - ./my.cnf:/etc/mysql/conf.d/my.cnf
     env_file: ./envfiles/docker.env
     ports:
       - 3306:3306
@@ -19,3 +22,10 @@ services:
       - ./:/app
     links:
       - mysql
+    entrypoint:
+      - dockerize
+      - -timeout
+      - 60s
+      - -wait
+      - tcp://mysql:3306
+    command: fresh -c my_runner.conf
