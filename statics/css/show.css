@@ -1,5 +1,6 @@
 body{
   background-color: #2d2d2d;
+  max-width: 900px;
 }
 
 .container{
@@ -47,7 +48,7 @@ body{
   transform: translate(-50%,-50%);
   width: 70%;
   max-width: 700px;
-  height: 60%;
+  height: 40%;
   padding: 50px;
   background-color: #484848;
   z-index: 2;
@@ -80,6 +81,29 @@ body{
   z-index: 1;
   cursor: pointer;
 }
-@media screen and (max-width: 480px){
-
+@media screen and (min-width: 481px){
+  body{
+    background-color: #2d2d2d;
+    max-width: 900px;
+    margin: auto;
+  }
+  .container{
+    display: grid;
+    gap: 15px;
+    grid-template-columns:1fr 1fr 1fr;
+    grid-template-rows: 400px 300px 200px;
+    grid-auto-rows: 150px;
+  }
+  .popup-inner {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%,-50%);
+    width: 70%;
+    max-width: 700px;
+    height: 60%;
+    padding: 50px;
+    background-color: #484848;
+    z-index: 2;
+  }
 }
