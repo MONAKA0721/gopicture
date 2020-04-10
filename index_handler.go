@@ -4,11 +4,13 @@ import(
   "strings"
   "net/http"
   "encoding/gob"
+  "fmt"
   "golang.org/x/net/context"
   "google.golang.org/api/iterator"
   "golang.org/x/oauth2"
   "github.com/gorilla/sessions"
   oauthapi "google.golang.org/api/oauth2/v2"
+  "gopicture/database"
 )
 
 var (
@@ -60,8 +62,24 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 			uniqFolders = append(uniqFolders, ele)
 		}
 	}
-
-	data := map[string]interface{}{"Title": "index", "folders": uniqFolders, "userinfo": d.UserInfo, "LogoutURL": d.LogoutURL}
+  type Folder struct {
+    Name string
+    Hash string
+  }
+  db := database.GetDB()
+  rows, err := db.Raw("SELECT albums.name, albums.hash from albums inner join user_albums on albums.id = user_albums.album_id where user_albums.user_id = ?", 1).Rows()
+  if err != nil{
+    fmt.Println(err)
+  }
+  defer rows.Close()
+  var indexFolders []Folder
+  for rows.Next() {
+    var name string
+    var hash string
+    rows.Scan(&name, &hash)
+    indexFolders = append(indexFolders, Folder{Name:name, Hash:hash})
+  }
+	data := map[string]interface{}{"Title": "index", "folders": indexFolders, "userinfo": d.UserInfo, "LogoutURL": d.LogoutURL}
 	renderTemplate(w, "index", data)
 }
 
