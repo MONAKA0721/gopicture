@@ -30,3 +30,8 @@ func (u *User) FirstOrCreate(email string, name string) (err error) {
 	db := database.GetDB()
 	return db.Where(User{Email: email}).Attrs(User{Name: name}).FirstOrCreate(u).Error
 }
+
+func (u *User) AppendUserAlbums(album Album) (err error) {
+	db := database.GetDB()
+	return db.Model(&u).Association("Albums").Append(album).Error
+}

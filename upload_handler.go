@@ -8,8 +8,12 @@ import(
   "log"
   "io/ioutil"
   "net/http"
+  "math/rand"
+  "time"
   "golang.org/x/net/context"
   "cloud.google.com/go/storage"
+
+  "gopicture/models"
 )
 // UploadHandler は Cloud Storage for Firebase にアップロードするための関数です
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
@@ -20,6 +24,23 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseMultipartForm(32 << 20)
 	fhs := r.MultipartForm.File["upload-firebase"]
 	ctx := context.Background()
+  remoteFolderName := RandString(32)
+  inputFolderName := r.FormValue("album")
+  album := models.Album{Name: inputFolderName, Hash: remoteFolderName}
+  err := album.Create()
+  if err != nil{
+    fmt.Println(err)
+  }
+  user := new(models.User)
+  ui := profileFromSession(r)
+  err = user.FirstOrCreate(ui.Email, ui.Name)
+  if err != nil {
+      print(err)
+  }
+  err = user.AppendUserAlbums(album)
+  if err != nil{
+    fmt.Println(err)
+  }
 	for _, fh := range fhs {
 		f, err := fh.Open()
 		if err != nil {
@@ -44,8 +65,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			contentType = http.DetectContentType(fileData)
 		}
-		folderName := r.FormValue("album")
-		remotePath := path.Join(folderName, remoteFilename)
+		remotePath := path.Join(remoteFolderName, remoteFilename)
 		writer := bucket.Object(remotePath).NewWriter(ctx)
 		writer.ObjectAttrs.ContentType = contentType
 		writer.ObjectAttrs.CacheControl = "no-cache"
@@ -61,4 +81,18 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	http.Redirect(w, r, "/", http.StatusFound)
+}
+
+const rsLetters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+func RandString(n int) string {
+    b := make([]byte, n)
+    for i := range b {
+        b[i] = rsLetters[rand.Intn(len(rsLetters))]
+    }
+    return string(b)
+}
+
+func init() {
+    rand.Seed(time.Now().UnixNano())
 }
