@@ -7,5 +7,6 @@ import (
 //Picture テーブル準備
 type Picture struct {
 	gorm.Model
-	Name string `gorm:"not null"`
+	Name    string `gorm:"not null"`
+	AlbumID int    `gorm:"index"`
 }

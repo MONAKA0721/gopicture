@@ -65,9 +65,12 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
   type Folder struct {
     Name string
     Hash string
+    TopPicName string
   }
   db := database.GetDB()
-  rows, err := db.Raw("SELECT albums.name, albums.hash from albums inner join user_albums on albums.id = user_albums.album_id where user_albums.user_id = ?", 1).Rows()
+  rows, err := db.Raw(`SELECT albums.name, albums.hash, albums.id
+    FROM albums INNER JOIN user_albums ON albums.id = user_albums.album_id
+    WHERE user_albums.user_id = ?`, 1).Rows()
   if err != nil{
     fmt.Println(err)
   }
@@ -76,10 +79,27 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
   for rows.Next() {
     var name string
     var hash string
-    rows.Scan(&name, &hash)
-    indexFolders = append(indexFolders, Folder{Name:name, Hash:hash})
+    var aid int
+    rows.Scan(&name, &hash, &aid)
+    row := db.Raw(`SELECT temp.pname FROM
+      (SELECT p.name pname, count(*) cnt
+      FROM (albums a INNER JOIN pictures p on a.id = p.album_id)
+      INNER JOIN user_fav_pictures f
+      ON p.id = f.picture_id where a.id = ? GROUP BY p.name) temp
+      WHERE temp.cnt = (SELECT max(cnt2)
+      FROM(SELECT p.name pname, count(*) cnt2
+      FROM (albums a INNER JOIN pictures p on a.id = p.album_id)
+      INNER JOIN user_fav_pictures f ON p.id = f.picture_id where a.id = ?
+      GROUP BY p.name) num)`, aid, aid).Row()
+    var pictureName string
+    row.Scan(&pictureName)
+    indexFolders = append(indexFolders, Folder{Name:name, Hash:hash, TopPicName:pictureName})
   }
-	data := map[string]interface{}{"Title": "index", "folders": indexFolders, "userinfo": d.UserInfo, "LogoutURL": d.LogoutURL}
+	data := map[string]interface{}{
+    "Title": "index",
+    "folders": indexFolders,
+    "userinfo": d.UserInfo,
+    "LogoutURL": d.LogoutURL}
 	renderTemplate(w, "index", data)
 }
 
