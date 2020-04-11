@@ -26,21 +26,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
   remoteFolderName := RandString(32)
   inputFolderName := r.FormValue("album")
-  album := models.Album{Name: inputFolderName, Hash: remoteFolderName}
-  err := album.Create()
-  if err != nil{
-    fmt.Println(err)
-  }
-  user := new(models.User)
-  ui := profileFromSession(r)
-  err = user.FirstOrCreate(ui.Email, ui.Name)
-  if err != nil {
-      print(err)
-  }
-  err = user.AppendUserAlbums(album)
-  if err != nil{
-    fmt.Println(err)
-  }
+  var pictures []models.Picture
 	for _, fh := range fhs {
 		f, err := fh.Open()
 		if err != nil {
@@ -57,7 +43,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		remoteFilename := fh.Filename
-
+    pictures = append(pictures, models.Picture{ Name:remoteFilename })
 		contentType := ""
 		fileData, err := ioutil.ReadAll(buf)
 		if err != nil {
@@ -80,11 +66,27 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 			log.Fatalln(err)
 		}
 	}
+  album := models.Album{ Name: inputFolderName, Hash: remoteFolderName, Pictures: pictures }
+  err := album.Create()
+  if err != nil{
+    fmt.Println(err)
+  }
+  user := new(models.User)
+  ui := profileFromSession(r)
+  err = user.FirstOrCreate(ui.Email, ui.Name)
+  if err != nil {
+      print(err)
+  }
+  err = user.AppendUserAlbums(album)
+  if err != nil{
+    fmt.Println(err)
+  }
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
 const rsLetters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
+// RandString creates random n-length letters
 func RandString(n int) string {
     b := make([]byte, n)
     for i := range b {
