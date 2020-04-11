@@ -35,3 +35,10 @@ func (u *User) AppendUserAlbums(album Album) (err error) {
 	db := database.GetDB()
 	return db.Model(&u).Association("Albums").Append(album).Error
 }
+
+func (u *User) AppendFavPictures(pid int) {
+	picture := Picture{}
+	db := database.GetDB()
+	db.First(&picture, "id = ?", pid)
+	db.Model(&u).Association("FavPictures").Append(picture)
+}

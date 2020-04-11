@@ -42,7 +42,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		if fh.Filename == "" {
 			continue
 		}
-		remoteFilename := fh.Filename
+		remoteFilename := RandString(32)
     pictures = append(pictures, models.Picture{ Name:remoteFilename })
 		contentType := ""
 		fileData, err := ioutil.ReadAll(buf)
