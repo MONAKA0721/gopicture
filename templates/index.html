@@ -9,50 +9,57 @@
     <title>{{ .Title |html }}</title>
   </head>
   <body>
-    <a href="/login">ログイン</a>
-      <!-- {{if .profile}}
-        <form method="post" action="{{.LogoutURL}}" class="navbar-form navbar-right">
-          <button class="btn btn-default">Log out</button>
-        </form>
-        <div class="navbar-text navbar-right">
-          {{if .Profile.ImageURL}}
-            <img class="img-circle" width="24" src="{{.Profile.ImageURL}}">
-          {{end}}
-          <span>{{.Profile.DisplayName}}</span>
-        </div>
-      {{else}}
-        <div class="navbar-text navbar-right">
-          <a href="{{.LoginURL}}">Log in</a>
-        </div>
-      {{end}} -->
-    <div class="container">
-      <button id="btn">新しいアルバムを作成する</button>
-        <form action="/upload" enctype="multipart/form-data" method="post">
-          <label for="upload-firebase">アルバムに入れる写真を選んでください</label>
-          <input type="file" name="upload-firebase" id="upload-firebase" multiple="multiple" accept="image/*" required/>
-          <div id="input-album-name">
-            <label for="folder-name">アルバム名</label>
-            <input type="text" name="album" value="" id="folder-name" required pattern="[^/]+">
-            <small>「/」を含むアルバム名をつけることはできません</small>
+    <div id="wrap">
+      <main style="max-width:900px;margin:auto;">
+        <a href="/login">ログイン</a>
+          <!-- {{if .profile}}
+            <form method="post" action="{{.LogoutURL}}" class="navbar-form navbar-right">
+              <button class="btn btn-default">Log out</button>
+            </form>
+            <div class="navbar-text navbar-right">
+              {{if .Profile.ImageURL}}
+                <img class="img-circle" width="24" src="{{.Profile.ImageURL}}">
+              {{end}}
+              <span>{{.Profile.DisplayName}}</span>
+            </div>
+          {{else}}
+            <div class="navbar-text navbar-right">
+              <a href="{{.LoginURL}}">Log in</a>
+            </div>
+          {{end}} -->
+        <div class="container">
+          <button id="btn">新しいアルバムを作成する</button>
+            <form action="/upload" enctype="multipart/form-data" method="post">
+              <label for="upload-firebase">アルバムに入れる写真を選んでください</label>
+              <input type="file" name="upload-firebase" id="upload-firebase" multiple="multiple" accept="image/*" required/>
+              <div id="input-album-name">
+                <label for="folder-name">アルバム名</label>
+                <input type="text" name="album" value="" id="folder-name" required pattern="[^/]+">
+                <small>「/」を含むアルバム名をつけることはできません</small>
+              </div>
+              <div class="right">
+                <input type="submit" value="&#xf382; 写真をアップロードする" class="fas"/>
+              </div>
+            </form>
+          <div class="folders">
+            {{range .folders}}
+            <div class="card">
+              <div class="thumbnail">
+                <img src="https://www.jalan.net/news/img/2019/11/20191129_3gatsu_ryoko_08-e1575013549397-670x443.jpg" class="thumbimg">
+              </div>
+              <div class="album_title">
+                <a href="/show/{{.}}" class="link">
+                      {{.}}
+                </a>
+              </div>
+            </div>
+            {{end}}
           </div>
-          <div class="right">
-            <input type="submit" value="&#xf382; 写真をアップロードする" class="fas"/>
-          </div>
-        </form>
-      <div class="folders">
-        {{range .folders}}
-        <div class="card">
-          <div class="thumbnail">
-            <img src="https://www.jalan.net/news/img/2019/11/20191129_3gatsu_ryoko_08-e1575013549397-670x443.jpg" class="thumbimg">
-          </div>
-          <a href="/show/{{.}}" class="link">
-                {{.}}
-          </a>
         </div>
-        {{end}}
-      </div>
+      </main>
     </div>
     <script src="https://code.jquery.com/jquery-3.4.1.js"></script>
+    <script src="../statics/js/jquery-inertiaScroll.js"></script>
     <script src="../statics/js/index.js"></script>
   </body>
 </html>
