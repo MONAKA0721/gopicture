@@ -5,13 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <!-- <script src="https://kit.fontawesome.com/81a1ab3943.js" crossorigin="anonymous"></script> -->
     <meta name="google-site-verification" content="po8157oyj1IXaaMxeAi_p5sJOJ9TJtPqYZAIHN800pQ" />
+    <link href="https://fonts.googleapis.com/css?family=Roboto+Condensed:700" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="../statics/css/index.css">
     <title>{{ .Title |html }}</title>
   </head>
   <body>
     <div id="wrap">
       <main style="max-width:900px;margin:auto;">
-        <a href="/login">ログイン</a>
+        <h1 id="title">My Albums</h1>
+        <!-- <a href="/login">ログイン</a> -->
           <!-- {{if .profile}}
             <form method="post" action="{{.LogoutURL}}" class="navbar-form navbar-right">
               <button class="btn btn-default">Log out</button>
@@ -28,8 +30,8 @@
             </div>
           {{end}} -->
         <div class="container">
-          <button id="btn">新しいアルバムを作成する</button>
-            <form action="/upload" enctype="multipart/form-data" method="post">
+          <div id="newalbum"><button id="btn">新しいアルバムを作成する</button></div>
+            <form action="/upload" enctype="multipart/form-data" method="post" id="newform">
               <label for="upload-firebase">アルバムに入れる写真を選んでください</label>
               <input type="file" name="upload-firebase" id="upload-firebase" multiple="multiple" accept="image/*" required/>
               <div id="input-album-name">
@@ -45,17 +47,16 @@
             {{range .folders}}
             <div class="card">
               <div class="thumbnail">
-                <img src="https://www.jalan.net/news/img/2019/11/20191129_3gatsu_ryoko_08-e1575013549397-670x443.jpg" class="thumbimg">
+                <a href="/show/{{.}}"><img src="https://www.jalan.net/news/img/2019/11/20191129_3gatsu_ryoko_08-e1575013549397-670x443.jpg" class="thumbimg"></a>
               </div>
-              <div class="album_title">
-                <a href="/show/{{.}}" class="link">
-                      {{.}}
-                </a>
-              </div>
+              <a href="/show/{{.}}" class="link">
+                    {{.}}
+              </a>
             </div>
             {{end}}
           </div>
         </div>
+        <div id="space"></div>
       </main>
     </div>
     <script src="https://code.jquery.com/jquery-3.4.1.js"></script>
