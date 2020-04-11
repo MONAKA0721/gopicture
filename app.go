@@ -33,6 +33,7 @@ func main() {
 	http.HandleFunc("/logout", logoutHandler)
 	http.HandleFunc("/upload", UploadHandler)
 	http.HandleFunc("/show/", ShowHandler)
+	http.HandleFunc("/add/", AddPictureHandler)
 	http.HandleFunc("/favorite", FavoriteHandler)
 	http.HandleFunc("/oauth2callback", OAuthCallbackHandler)
 
