@@ -26,7 +26,7 @@ func GetDBConfig() (string, string) {
 		CONNECT := USER + ":" + PASS + "@" + PROTOCOL + "/" + DBNAME + "?parseTime=true"
 		return DBMS, CONNECT
 	}
-	CONNECT := strings.Replace(os.Getenv("CLEARDB_DATABASE_URL"), "mysql://", "", 1) + "&parseTime=true"
+	CONNECT := strings.Replace(os.Getenv("CLEARDB_DATABASE_URL"), "mysql://", "", 1) + "?parseTime=true"
 	return DBMS, CONNECT
 }
 
