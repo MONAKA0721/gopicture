@@ -25,6 +25,20 @@ func init() {
 }
 
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
+  // var pURL *string = &redirectURL
+  forwardSession, err := SessionStore.Get(r, forwardSessionID)
+  if err != nil {
+		fmt.Println(err)
+  }else{
+    print("test")
+    // if !ok {
+    //   fmt.Println("session error")
+    // }
+  }
+  _, ok := forwardSession.Values[forwardSessionKey]
+  if !ok {
+		print("error")
+	}
 	d := struct {
 		AuthEnabled bool
 		UserInfo     *oauthapi.Userinfoplus
@@ -32,7 +46,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 		LogoutURL   string
 	}{
 		AuthEnabled: OAuthConfig != nil,
-		LoginURL:    "/login?redirect=" + r.URL.RequestURI(),
+		LoginURL:    "/login?redirect=" + "",
 		LogoutURL:   "/logout?redirect=" + r.URL.RequestURI(),
 	}
 	if d.AuthEnabled {
@@ -99,6 +113,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
     "Title": "index",
     "folders": indexFolders,
     "userinfo": d.UserInfo,
+    "LoginURL": d.LoginURL,
     "LogoutURL": d.LogoutURL}
 	renderTemplate(w, "index", data)
 }

@@ -13,6 +13,8 @@ const (
 	oauthFlowRedirectKey    = "redirect"
 	oauthTokenSessionKey    = "oauth_token"
 	googleProfileSessionKey = "google_profile"
+  forwardSessionID = "forward"
+  forwardSessionKey = "normal"
 )
 
 func OAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {

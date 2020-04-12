@@ -13,6 +13,19 @@ type File struct {
 }
 
 func ShowHandler(w http.ResponseWriter, r *http.Request) {
+	profile := profileFromSession(r)
+	if profile == nil {
+		forwardSession, err := SessionStore.New(r, forwardSessionID)
+		if err != nil {
+			fmt.Println(err)
+		}
+		redirectURL := r.URL.String()
+		forwardSession.Values[forwardSessionKey] = redirectURL
+		if err := forwardSession.Save(r, w); err != nil {
+	    fmt.Println(err)
+		}
+		http.Redirect(w, r, "/", http.StatusFound)
+	}
 	albumHash := r.URL.Path[len("/show/"):]
 	db := database.GetDB()
 	rows, err := db.Raw(`SELECT pictures.name, pictures.id FROM pictures
