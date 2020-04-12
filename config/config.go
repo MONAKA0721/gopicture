@@ -17,11 +17,15 @@ import (
 
 func GetDBConfig() (string, string) {
 	DBMS := "mysql"
-	USER := os.Getenv("MYSQL_USER")
-	PASS := os.Getenv("MYSQL_PASSWORD")
-	PROTOCOL := "tcp(mysql:3306)"
-	DBNAME := os.Getenv("MYSQL_DATABASE")
-	CONNECT := USER + ":" + PASS + "@" + PROTOCOL + "/" + DBNAME + "?parseTime=true"
+	if os.Getenv("GO_ENV") == "dev" {
+		USER := os.Getenv("MYSQL_USER")
+		PASS := os.Getenv("MYSQL_PASSWORD")
+		PROTOCOL := "tcp(mysql:3306)"
+		DBNAME := os.Getenv("MYSQL_DATABASE")
+		CONNECT := USER + ":" + PASS + "@" + PROTOCOL + "/" + DBNAME + "?parseTime=true"
+		return DBMS, CONNECT
+	}
+	CONNECT := "bb9428cd47c9e5:8d32b65a@us-cdbr-iron-east-01.cleardb.net/heroku_ddb94b7ce8ee63e?reconnect=true&parseTime=true"
 	return DBMS, CONNECT
 }
 
