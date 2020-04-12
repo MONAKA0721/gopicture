@@ -6,24 +6,40 @@ import(
   "golang.org/x/net/context"
   "google.golang.org/api/iterator"
   "strconv"
+  "fmt"
+  "gopicture/database"
+  "gopicture/models"
 )
 
+// FavoriteHandler handle user's favorite for pictures
 func FavoriteHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := context.Background()
 	if r.Method != "POST" {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	r.ParseForm()
-	path := r.FormValue("path")
-	_, _, err := storeClient.Collection("favorites").Add(ctx, map[string]interface{}{
-		"uid":      55,
-		"filepath": path,
-	})
-	if err != nil {
-		log.Fatalf("Failed adding alovelace: %v", err)
-	}
-	count := CountFavorite(path)
+  albumHash := r.FormValue("albumHash")
+  fileName := r.FormValue("fileName")
+  db := database.GetDB()
+  row := db.Raw(`SELECT pictures.id
+    FROM pictures INNER JOIN albums
+    ON pictures.album_id = albums.id
+    WHERE albums.hash = ? AND pictures.name = ?`, albumHash, fileName).Row()
+  var pid int
+  row.Scan(&pid)
+  fmt.Println(pid)
+  user := new(models.User)
+  ui := profileFromSession(r)
+  err := user.FirstOrCreate(ui.Email, ui.Name)
+  if err != nil {
+      fmt.Println(err)
+  }
+  user.AppendFavPictures(pid)
+  var count int
+  row = db.Raw(`SELECT count(*)
+  FROM user_fav_pictures
+  WHERE picture_id = ?`, pid).Row()
+  row.Scan(&count)
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.Write([]byte(strconv.Itoa(count)))
 }

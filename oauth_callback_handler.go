@@ -5,6 +5,7 @@ import(
   "fmt"
   "golang.org/x/net/context"
   oauthapi "google.golang.org/api/oauth2/v2"
+  "gopicture/models"
 )
 
 const (
@@ -12,6 +13,8 @@ const (
 	oauthFlowRedirectKey    = "redirect"
 	oauthTokenSessionKey    = "oauth_token"
 	googleProfileSessionKey = "google_profile"
+  forwardSessionID = "forward"
+  forwardSessionKey = "normal"
 )
 
 func OAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
@@ -56,6 +59,11 @@ func OAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	session.Values[oauthTokenSessionKey] = tok
 	// Strip the profile to only the fields we need. Otherwise the struct is too big.
 	session.Values[googleProfileSessionKey] = ui
+  user := new(models.User)
+  err = user.FirstOrCreate(ui.Email, ui.Name)
+  if err != nil {
+      print(err)
+  }
 	if err := session.Save(r, w); err != nil {
 		fmt.Println(err)
 	}

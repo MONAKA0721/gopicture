@@ -21,7 +21,7 @@ func GetDBConfig() (string, string) {
 	PASS := os.Getenv("MYSQL_PASSWORD")
 	PROTOCOL := "tcp(mysql:3306)"
 	DBNAME := os.Getenv("MYSQL_DATABASE")
-	CONNECT := USER + ":" + PASS + "@" + PROTOCOL + "/" + DBNAME
+	CONNECT := USER + ":" + PASS + "@" + PROTOCOL + "/" + DBNAME + "?parseTime=true"
 	return DBMS, CONNECT
 }
 

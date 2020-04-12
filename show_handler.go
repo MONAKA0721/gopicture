@@ -1,42 +1,53 @@
 package main
 
 import (
+	"fmt"
+	"gopicture/database"
 	"net/http"
-	"regexp"
-	"golang.org/x/net/context"
-	"google.golang.org/api/iterator"
-	"cloud.google.com/go/storage"
 )
 
 type File struct {
 	Link     string
-	Path     string
+	FileName string
 	FavCount int
 }
 
 func ShowHandler(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Path[len("/show/"):]
-	ctx := context.Background()
-	prefix := id + "/"
-	it := bucket.Objects(ctx, &storage.Query{
-		Prefix: prefix,
-	})
-	list := []File{}
-	for {
-		attrs, err := it.Next()
-		if err == iterator.Done {
-			break
-		}
+	profile := profileFromSession(r)
+	if profile == nil {
+		forwardSession, err := SessionStore.New(r, forwardSessionID)
 		if err != nil {
-			return
+			fmt.Println(err)
 		}
-		if attrs.Name[len(attrs.Name)-1:] != "/" {
-			path := attrs.Name
-			rep := regexp.MustCompile(`\W`)
-			path = rep.ReplaceAllString(path, "")
-			count := CountFavorite(path)
-			list = append(list, File{"https://storage.googleapis.com/go-pictures.appspot.com/" + attrs.Name, path, count})
+		redirectURL := r.URL.String()
+		forwardSession.Values[forwardSessionKey] = redirectURL
+		if err := forwardSession.Save(r, w); err != nil {
+	    fmt.Println(err)
 		}
+		http.Redirect(w, r, "/", http.StatusFound)
+	}
+	albumHash := r.URL.Path[len("/show/"):]
+	db := database.GetDB()
+	rows, err := db.Raw(`SELECT pictures.name, pictures.id FROM pictures
+		INNER JOIN albums ON albums.id = pictures.album_id
+		WHERE albums.hash = ?`, albumHash).Rows()
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer rows.Close()
+	list := []File{}
+	var pname string
+	var pid int
+	for rows.Next() {
+		rows.Scan(&pname, &pid)
+		var count int
+		row := db.Raw(`SELECT count(*)
+	  FROM user_fav_pictures
+	  WHERE picture_id = ?`, pid).Row()
+		row.Scan(&count)
+		file := File{"https://storage.googleapis.com/go-pictures.appspot.com/" +
+			albumHash + "/" + pname, pname, count}
+		list = append(list, file)
 	}
 	data := struct {
 		List []File

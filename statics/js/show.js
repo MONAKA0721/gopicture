@@ -72,16 +72,19 @@ $(function(){
     }
 
   $('div[id^="favorite"]').on("click", function(){
-    var path = $(this).attr('id').replace('favorite-', '');
+    var albumHash = $(location).attr('pathname').replace('/show/', '');
+    var fileName = $(this).attr('id').replace('favorite-', '');
+    console.log(fileName);
     $.ajax({
       type: 'POST',
       url: '/favorite',
       data: {
-        "path": path
+        "albumHash": albumHash,
+        "fileName": fileName
       }
     }).then(
       data => {
-        id = '#favorite-count-'+path;
+        id = '#favorite-count-' + fileName;
         $(id).html(String(data));
       },
       error => alert("Error")

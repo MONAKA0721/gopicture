@@ -1,31 +1,33 @@
 package main
 
-import(
+import (
+  "net/http"
   "fmt"
   "bytes"
   "io"
+  "io/ioutil"
   "path"
   "log"
-  "io/ioutil"
-  "net/http"
-  "math/rand"
-  "time"
+  "strings"
+
   "golang.org/x/net/context"
   "cloud.google.com/go/storage"
 
   "gopicture/models"
+  "gopicture/database"
 )
-// UploadHandler は Cloud Storage for Firebase にアップロードするための関数です
-func UploadHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
+
+// AddPictureHandler handles adding new pictures to existing album
+func AddPictureHandler(w http.ResponseWriter, r *http.Request) {
+  if r.Method != "POST" {
 		http.Error(w, "Allowed POST method only", http.StatusMethodNotAllowed)
 		return
 	}
-	r.ParseMultipartForm(32 << 20)
+  r.ParseMultipartForm(32 << 20)
 	fhs := r.MultipartForm.File["upload-firebase"]
 	ctx := context.Background()
-  remoteFolderName := RandString(32)
-  inputFolderName := r.FormValue("album")
+  remoteFolderName := strings.Replace(r.URL.Path, "/add/", "", 1)
+  fmt.Println(remoteFolderName)
   var pictures []models.Picture
 	for _, fh := range fhs {
 		f, err := fh.Open()
@@ -66,14 +68,14 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 			log.Fatalln(err)
 		}
 	}
-  album := models.Album{ Name: inputFolderName, Hash: remoteFolderName, Pictures: pictures }
-  err := album.Create()
-  if err != nil{
-    fmt.Println(err)
-  }
+  var album models.Album
+  db := database.GetDB()
+  db.Where("hash = ?", remoteFolderName).First(&album)
+  db.Model(&album).Association("Pictures").Append(pictures)
+
   user := new(models.User)
   ui := profileFromSession(r)
-  err = user.FirstOrCreate(ui.Email, ui.Name)
+  err := user.FirstOrCreate(ui.Email, ui.Name)
   if err != nil {
       print(err)
   }
@@ -81,20 +83,5 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
   if err != nil{
     fmt.Println(err)
   }
-	http.Redirect(w, r, "/", http.StatusFound)
-}
-
-const rsLetters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-
-// RandString creates random n-length letters
-func RandString(n int) string {
-    b := make([]byte, n)
-    for i := range b {
-        b[i] = rsLetters[rand.Intn(len(rsLetters))]
-    }
-    return string(b)
-}
-
-func init() {
-    rand.Seed(time.Now().UnixNano())
+  http.Redirect(w, r, "/", http.StatusFound)
 }

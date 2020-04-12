@@ -3,12 +3,14 @@ package main
 import(
   "strings"
   "net/http"
-
+  "encoding/gob"
+  "fmt"
   "golang.org/x/net/context"
   "google.golang.org/api/iterator"
   "golang.org/x/oauth2"
   "github.com/gorilla/sessions"
   oauthapi "google.golang.org/api/oauth2/v2"
+  "gopicture/database"
 )
 
 var (
@@ -16,7 +18,27 @@ var (
 	SessionStore sessions.Store
 )
 
+func init() {
+	// Gob encoding for gorilla/sessions
+	gob.Register(&oauth2.Token{})
+	gob.Register(&oauthapi.Userinfoplus{})
+}
+
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
+  // var pURL *string = &redirectURL
+  forwardSession, err := SessionStore.Get(r, forwardSessionID)
+  if err != nil {
+		fmt.Println(err)
+  }else{
+    print("test")
+    // if !ok {
+    //   fmt.Println("session error")
+    // }
+  }
+  _, ok := forwardSession.Values[forwardSessionKey]
+  if !ok {
+		print("error")
+	}
 	d := struct {
 		AuthEnabled bool
 		UserInfo     *oauthapi.Userinfoplus
@@ -24,7 +46,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 		LogoutURL   string
 	}{
 		AuthEnabled: OAuthConfig != nil,
-		LoginURL:    "/login?redirect=" + r.URL.RequestURI(),
+		LoginURL:    "/login?redirect=" + "",
 		LogoutURL:   "/logout?redirect=" + r.URL.RequestURI(),
 	}
 	if d.AuthEnabled {
@@ -54,8 +76,45 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 			uniqFolders = append(uniqFolders, ele)
 		}
 	}
-
-	data := map[string]interface{}{"Title": "index", "folders": uniqFolders}
+  type Folder struct {
+    Name string
+    Hash string
+    TopPicName string
+  }
+  db := database.GetDB()
+  rows, err := db.Raw(`SELECT albums.name, albums.hash, albums.id
+    FROM albums INNER JOIN user_albums ON albums.id = user_albums.album_id
+    WHERE user_albums.user_id = ?`, 1).Rows()
+  if err != nil{
+    fmt.Println(err)
+  }
+  defer rows.Close()
+  var indexFolders []Folder
+  for rows.Next() {
+    var name string
+    var hash string
+    var aid int
+    rows.Scan(&name, &hash, &aid)
+    row := db.Raw(`SELECT temp.pname FROM
+      (SELECT p.name pname, count(*) cnt
+      FROM (albums a INNER JOIN pictures p on a.id = p.album_id)
+      INNER JOIN user_fav_pictures f
+      ON p.id = f.picture_id where a.id = ? GROUP BY p.name) temp
+      WHERE temp.cnt = (SELECT max(cnt2)
+      FROM(SELECT p.name pname, count(*) cnt2
+      FROM (albums a INNER JOIN pictures p on a.id = p.album_id)
+      INNER JOIN user_fav_pictures f ON p.id = f.picture_id where a.id = ?
+      GROUP BY p.name) num)`, aid, aid).Row()
+    var pictureName string
+    row.Scan(&pictureName)
+    indexFolders = append(indexFolders, Folder{Name:name, Hash:hash, TopPicName:pictureName})
+  }
+	data := map[string]interface{}{
+    "Title": "index",
+    "folders": indexFolders,
+    "userinfo": d.UserInfo,
+    "LoginURL": d.LoginURL,
+    "LogoutURL": d.LogoutURL}
 	renderTemplate(w, "index", data)
 }
 
@@ -66,7 +125,6 @@ func profileFromSession(r *http.Request) *oauthapi.Userinfoplus {
 	if err != nil {
 		return nil
 	}
-
 	tok, ok := session.Values[oauthTokenSessionKey].(*oauth2.Token)
 	if !ok || !tok.Valid() {
 		return nil
