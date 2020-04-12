@@ -59,7 +59,7 @@ func configureOAuthClient(clientID, clientSecret string) *oauth2.Config {
 }
 
 func init() {
-	OAuthConfig = configureOAuthClient(os.Getenv("CLIENT_ID"), os.Getenv("CLIENT_SECRET"))
+	OAuthConfig = configureOAuthClient(os.Getenv("OAUTH_CLIENT_ID"), os.Getenv("OAUTH_CLIENT_SECRET"))
 	// Configure storage method for session-wide information.
 	// Update "something-very-secret" with a hard to guess string or byte sequence.
 	// 乱数生成
