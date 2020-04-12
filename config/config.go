@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/joho/godotenv"
 	"golang.org/x/net/context"
@@ -25,7 +26,7 @@ func GetDBConfig() (string, string) {
 		CONNECT := USER + ":" + PASS + "@" + PROTOCOL + "/" + DBNAME + "?parseTime=true"
 		return DBMS, CONNECT
 	}
-	CONNECT := "bb9428cd47c9e5:8d32b65a@us-cdbr-iron-east-01.cleardb.net/heroku_ddb94b7ce8ee63e?reconnect=true&parseTime=true"
+	CONNECT := strings.Replace(os.Getenv("CLEARDB_DATABASE_URL"), "mysql://", "", 1) + "&parseTime=true"
 	return DBMS, CONNECT
 }
 
