@@ -70,6 +70,7 @@ func AddPictureHandler(w http.ResponseWriter, r *http.Request) {
 	}
   var album models.Album
   db := database.GetDB()
+  defer db.Close()
   db.Where("hash = ?", remoteFolderName).First(&album)
   db.Model(&album).Association("Pictures").Append(pictures)
 

@@ -16,5 +16,6 @@ type Album struct {
 
 func (a *Album) Create() (err error) {
 	db := database.GetDB()
+	defer db.Close()
 	return db.Create(a).Error
 }

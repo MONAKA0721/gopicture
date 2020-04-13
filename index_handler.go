@@ -82,6 +82,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
     TopPicName string
   }
   db := database.GetDB()
+  defer db.Close()
   rows, err := db.Raw(`SELECT albums.name, albums.hash, albums.id
     FROM albums INNER JOIN user_albums ON albums.id = user_albums.album_id
     WHERE user_albums.user_id = ?`, 1).Rows()

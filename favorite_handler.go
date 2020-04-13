@@ -21,6 +21,7 @@ func FavoriteHandler(w http.ResponseWriter, r *http.Request) {
   albumHash := r.FormValue("albumHash")
   fileName := r.FormValue("fileName")
   db := database.GetDB()
+  defer db.Close()
   row := db.Raw(`SELECT pictures.id
     FROM pictures INNER JOIN albums
     ON pictures.album_id = albums.id
