@@ -11,6 +11,7 @@ import(
   "github.com/gorilla/sessions"
   oauthapi "google.golang.org/api/oauth2/v2"
   "gopicture/database"
+  "gopicture/models"
 )
 
 var (
@@ -30,14 +31,14 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
   if err != nil {
 		fmt.Println(err)
   }else{
-    print("test")
+    // print("test")
     // if !ok {
     //   fmt.Println("session error")
     // }
   }
   _, ok := forwardSession.Values[forwardSessionKey]
   if !ok {
-		print("error")
+		print("forward session error")
 	}
 	d := struct {
 		AuthEnabled bool
@@ -108,7 +109,15 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
       GROUP BY p.name) num)`, aid, aid).Row()
     var pictureName string
     row.Scan(&pictureName)
-    indexFolders = append(indexFolders, Folder{Name:name, Hash:hash, TopPicName:pictureName})
+    if pictureName == ""{
+      var pic = models.Picture{}
+      db.Where("album_id = ?", aid).First(&pic)
+      topPicName := pic.Name
+      indexFolders = append(indexFolders, Folder{Name:name, Hash:hash, TopPicName: topPicName})
+    }else{
+      topPicName := pictureName
+      indexFolders = append(indexFolders, Folder{Name:name, Hash:hash, TopPicName: topPicName})
+    }
   }
 	data := map[string]interface{}{
     "Title": "index",

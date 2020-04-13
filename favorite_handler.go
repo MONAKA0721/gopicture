@@ -28,12 +28,11 @@ func FavoriteHandler(w http.ResponseWriter, r *http.Request) {
     WHERE albums.hash = ? AND pictures.name = ?`, albumHash, fileName).Row()
   var pid int
   row.Scan(&pid)
-  fmt.Println(pid)
   user := new(models.User)
   ui := profileFromSession(r)
   err := user.FirstOrCreate(ui.Email, ui.Name)
   if err != nil {
-      fmt.Println(err)
+    fmt.Println(err)
   }
   user.AppendFavPictures(pid)
   var count int

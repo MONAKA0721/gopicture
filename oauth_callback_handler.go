@@ -52,9 +52,6 @@ func OAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	ui, err := svr.Userinfo.Get().Do()
 	if err != nil {
 		fmt.Fprintf(w, "OAuth Error:%v", err)
-	} else {
-		//メールアドレス取得！
-		fmt.Println(ui.Email)
 	}
 	session.Values[oauthTokenSessionKey] = tok
 	// Strip the profile to only the fields we need. Otherwise the struct is too big.
