@@ -12,7 +12,8 @@ var db *gorm.DB
 
 // Init initializes database
 func Init(isReset bool, models ...interface{}) {
-	db, err := gorm.Open(config.GetDBConfig())
+	var err error
+	db, err = gorm.Open(config.GetDBConfig())
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -25,7 +26,7 @@ func Init(isReset bool, models ...interface{}) {
 
 // GetDB returns database connection
 func GetDB() *gorm.DB {
-	db, _ = gorm.Open(config.GetDBConfig())
+	// db, _ = gorm.Open(config.GetDBConfig())
 	return db
 }
 

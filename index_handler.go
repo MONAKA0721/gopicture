@@ -10,7 +10,6 @@ import(
   "golang.org/x/oauth2"
   "github.com/gorilla/sessions"
   oauthapi "google.golang.org/api/oauth2/v2"
-  "gopicture/database"
   "gopicture/models"
 )
 
@@ -33,10 +32,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
   if err != nil {
 		fmt.Println(err)
   }else{
-    url, ok := forwardSession.Values[forwardSessionKey].(string)
-    if !ok {
-      print("forward session error")
-    }
+    url, _ := forwardSession.Values[forwardSessionKey].(string)
     *pURL = url
   }
 	d := struct {
@@ -86,11 +82,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
   }
   var indexFolders []Folder
   if uid != 0{
-    db := database.GetDB()
-    defer db.Close()
-    rows, err := db.Raw(`SELECT albums.name, albums.hash, albums.id
-      FROM albums INNER JOIN user_albums ON albums.id = user_albums.album_id
-      WHERE user_albums.user_id = ?`, uid).Rows()
+    rows, err := models.FindAlbums(uid)
     if err != nil{
       fmt.Println(err)
     }
@@ -100,21 +92,12 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
       var hash string
       var aid int
       rows.Scan(&name, &hash, &aid)
-      row := db.Raw(`SELECT temp.pname FROM
-        (SELECT p.name pname, count(*) cnt
-        FROM (albums a INNER JOIN pictures p on a.id = p.album_id)
-        INNER JOIN user_fav_pictures f
-        ON p.id = f.picture_id where a.id = ? GROUP BY p.name) temp
-        WHERE temp.cnt = (SELECT max(cnt2)
-        FROM(SELECT p.name pname, count(*) cnt2
-        FROM (albums a INNER JOIN pictures p on a.id = p.album_id)
-        INNER JOIN user_fav_pictures f ON p.id = f.picture_id where a.id = ?
-        GROUP BY p.name) num)`, aid, aid).Row()
+      row := models.FindTopPicture(aid)
       var pictureName string
       row.Scan(&pictureName)
       if pictureName == ""{
         var pic = models.Picture{}
-        db.Where("album_id = ?", aid).First(&pic)
+        _ = pic.FindFirstPicture(aid)
         topPicName := pic.Name
         indexFolders = append(indexFolders, Folder{Name:name, Hash:hash, TopPicName: topPicName})
       }else{

@@ -32,7 +32,6 @@ func ShowHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	albumHash := r.URL.Path[len("/show/"):]
 	db := database.GetDB()
-	defer db.Close()
 	rows, err := db.Raw(`SELECT pictures.name, pictures.id FROM pictures
 		INNER JOIN albums ON albums.id = pictures.album_id
 		WHERE albums.hash = ?`, albumHash).Rows()
