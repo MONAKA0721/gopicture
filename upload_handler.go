@@ -72,7 +72,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
     fmt.Println(err)
   }
   user := new(models.User)
-  ui := profileFromSession(r)
+  ui, _ := profileFromSession(r)
   err = user.FirstOrCreate(ui.Email, ui.Name)
   if err != nil {
       print(err)

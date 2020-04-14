@@ -15,6 +15,7 @@ const (
 	googleProfileSessionKey = "google_profile"
   forwardSessionID = "forward"
   forwardSessionKey = "normal"
+  userIDSessionKey = "user_id"
 )
 
 func OAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
@@ -61,6 +62,7 @@ func OAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
   if err != nil {
       print(err)
   }
+  session.Values[userIDSessionKey] = user.ID
 	if err := session.Save(r, w); err != nil {
 		fmt.Println(err)
 	}

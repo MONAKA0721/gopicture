@@ -29,7 +29,7 @@ func FavoriteHandler(w http.ResponseWriter, r *http.Request) {
   var pid int
   row.Scan(&pid)
   user := new(models.User)
-  ui := profileFromSession(r)
+  ui, _ := profileFromSession(r)
   err := user.FirstOrCreate(ui.Email, ui.Name)
   if err != nil {
     fmt.Println(err)

@@ -14,7 +14,7 @@ type File struct {
 }
 
 func ShowHandler(w http.ResponseWriter, r *http.Request) {
-	profile := profileFromSession(r)
+	profile, _ := profileFromSession(r)
 	if profile == nil {
 		forwardSession, err := SessionStore.New(r, forwardSessionID)
 		forwardSession.Options = &sessions.Options{

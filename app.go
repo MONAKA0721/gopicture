@@ -35,6 +35,7 @@ func main() {
 	http.ListenAndServe(":"+port, nil)
 }
 
+// Index is routing
 func Index(w http.ResponseWriter, r *http.Request) {
 	p := r.URL.Path
 	if strings.HasPrefix(p, "/login") {

@@ -75,7 +75,7 @@ func AddPictureHandler(w http.ResponseWriter, r *http.Request) {
   db.Model(&album).Association("Pictures").Append(pictures)
 
   user := new(models.User)
-  ui := profileFromSession(r)
+  ui, _:= profileFromSession(r)
   err := user.FirstOrCreate(ui.Email, ui.Name)
   if err != nil {
       print(err)
