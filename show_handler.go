@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"gopicture/database"
 	"net/http"
+	"github.com/gorilla/sessions"
 )
 
 type File struct {
@@ -16,6 +17,9 @@ func ShowHandler(w http.ResponseWriter, r *http.Request) {
 	profile := profileFromSession(r)
 	if profile == nil {
 		forwardSession, err := SessionStore.New(r, forwardSessionID)
+		forwardSession.Options = &sessions.Options{
+			Path: "/",
+    }
 		if err != nil {
 			fmt.Println(err)
 		}

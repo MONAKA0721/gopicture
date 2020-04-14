@@ -16,8 +16,8 @@ import (
   "golang.org/x/oauth2"
   "golang.org/x/oauth2/google"
 )
-// loginHandler initiates an OAuth flow to authenticate the user.
-func loginHandler(w http.ResponseWriter, r *http.Request) {
+// LoginHandler initiates an OAuth flow to authenticate the user.
+func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	sessionID := uuid.Must(uuid.NewV4()).String()
 
 	oauthFlowSession, err := SessionStore.New(r, sessionID)

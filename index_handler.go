@@ -25,21 +25,20 @@ func init() {
 	gob.Register(&oauthapi.Userinfoplus{})
 }
 
+// IndexHandler handle login/index page
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
-  // var pURL *string = &redirectURL
+  redirectURL := ""
+  var pURL = &redirectURL
   forwardSession, err := SessionStore.Get(r, forwardSessionID)
   if err != nil {
 		fmt.Println(err)
   }else{
-    // print("test")
-    // if !ok {
-    //   fmt.Println("session error")
-    // }
+    url, ok := forwardSession.Values[forwardSessionKey].(string)
+    if !ok {
+      print("forward session error")
+    }
+    *pURL = url
   }
-  _, ok := forwardSession.Values[forwardSessionKey]
-  if !ok {
-		print("forward session error")
-	}
 	d := struct {
 		AuthEnabled bool
 		UserInfo     *oauthapi.Userinfoplus
@@ -47,7 +46,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 		LogoutURL   string
 	}{
 		AuthEnabled: OAuthConfig != nil,
-		LoginURL:    "/login?redirect=" + "",
+		LoginURL:    "/login?redirect=" + redirectURL,
 		LogoutURL:   "/logout?redirect=" + r.URL.RequestURI(),
 	}
 	if d.AuthEnabled {
