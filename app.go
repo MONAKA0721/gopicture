@@ -29,6 +29,7 @@ func main() {
 	defer database.Close()
 
 	http.Handle("/statics/", http.StripPrefix("/statics/", http.FileServer(http.Dir("statics/"))))
+	http.HandleFunc("/api/", Api)
 	http.HandleFunc("/", Index)
 
 	port := os.Getenv("PORT")
@@ -54,6 +55,17 @@ func Index(w http.ResponseWriter, r *http.Request) {
 		OAuthCallbackHandler(w, r)
 	} else if strings.HasPrefix(p, "/favicon.ico") {
 		FaviconHandler(w, r)
+	} else {
+		IndexHandler(w, r)
+	}
+}
+
+func Api(w http.ResponseWriter, r *http.Request) {
+	p := r.URL.Path
+	if strings.HasPrefix(p, "/api/signup") {
+		SignupHandler(w, r)
+	} else if strings.HasPrefix(p, "/api/login") {
+		ApiLoginHandler(w, r)
 	} else {
 		IndexHandler(w, r)
 	}

@@ -11,6 +11,7 @@ type User struct {
 	gorm.Model
 	Name        string    `json:"name" gorm:"unique;not null"`
 	Email       string    `json:"email" gorm:"unique;not null"`
+	Password    string    `json:"password"`
 	Albums      []Album   `gorm:"many2many:user_albums;"`
 	FavPictures []Picture `gorm:"many2many:user_fav_pictures;"`
 }
@@ -41,4 +42,9 @@ func (u *User) AppendFavPictures(pid int) {
 	db := database.GetDB()
 	db.First(&picture, "id = ?", pid)
 	db.Model(&u).Association("FavPictures").Append(picture)
+}
+
+func (u *User) Create() (err error) {
+	db := database.GetDB()
+	return db.Create(u).Error
 }

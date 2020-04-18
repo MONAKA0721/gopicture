@@ -10,11 +10,17 @@ import (
   "encoding/base32"
   "net/url"
   "errors"
+  "encoding/json"
 
+  "golang.org/x/crypto/bcrypt"
   "github.com/gorilla/sessions"
   "github.com/gofrs/uuid"
   "golang.org/x/oauth2"
   "golang.org/x/oauth2/google"
+  "github.com/dgrijalva/jwt-go"
+  "github.com/jinzhu/gorm"
+
+  "gopicture/models"
 )
 // LoginHandler initiates an OAuth flow to authenticate the user.
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
@@ -94,4 +100,85 @@ func validateRedirectURL(path string) (string, error) {
 		return "/", errors.New("URL must not be absolute")
 	}
 	return path, nil
+}
+
+func ApiLoginHandler(w http.ResponseWriter, r *http.Request ) {
+  var user models.User
+  var error models.Error
+  var jwt models.JWT
+
+  json.NewDecoder(r.Body).Decode(&user)
+
+  if user.Email == "" {
+      error.Message = "Email は必須です。"
+      errorInResponse(w, http.StatusBadRequest, error)
+      return
+  }
+
+  if user.Password == "" {
+      error.Message = "パスワードは、必須です。"
+      errorInResponse(w, http.StatusBadRequest, error)
+  }
+
+  // 追加(この位置であること)
+  password := user.Password
+  fmt.Println("password: ", password)
+
+  // 認証キー(Emal)のユーザー情報をDBから取得
+  err := user.FindByEmail(user.Email)
+
+  if err != nil {
+    if gorm.IsRecordNotFoundError(err){
+      error.Message = "ユーザが存在しません。"
+      errorInResponse(w, http.StatusBadRequest, error)
+    }
+    fmt.Println(err)
+  }
+
+  // 追加(この位置であること)
+  hasedPassword := user.Password
+  fmt.Println("hasedPassword: ", hasedPassword)
+
+  err = bcrypt.CompareHashAndPassword([]byte(hasedPassword), []byte(password))
+
+  if err != nil {
+      error.Message = "無効なパスワードです。"
+      errorInResponse(w, http.StatusUnauthorized, error)
+      return
+  }
+
+  token, err := createToken(user)
+
+  if err != nil {
+      fmt.Println(err)
+  }
+
+  w.WriteHeader(http.StatusOK)
+  jwt.Token = token
+
+  responseByJSON(w, jwt)
+}
+
+func createToken(user models.User) (string, error) {
+  var err error
+
+  // Token を作成
+  // jwt -> JSON Web Token - JSON をセキュアにやり取りするための仕様
+  // jwtの構造 -> {Base64 encoded Header}.{Base64 encoded Payload}.{Signature}
+  // HS254 -> 証明生成用(https://ja.wikipedia.org/wiki/JSON_Web_Token)
+  token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+      "email": user.Email,
+      "iss":   "__init__", // JWT の発行者が入る(文字列(__init__)は任意)
+  })
+
+  tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SIGNINKEY")))
+
+  fmt.Println("-----------------------------")
+  fmt.Println("tokenString:", tokenString)
+
+  if err != nil {
+      fmt.Println(err)
+  }
+
+  return tokenString, nil
 }

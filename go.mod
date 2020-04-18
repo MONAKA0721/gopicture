@@ -7,9 +7,11 @@ require (
 	cloud.google.com/go/storage v1.6.0
 	firebase.google.com/go v3.12.0+incompatible
 	github.com/clbanning/x2j v0.0.0-20191024224557-825249438eec // indirect
+	github.com/davecgh/go-spew v1.1.0
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/go-sql-driver/mysql v1.5.0
 	github.com/gofrs/uuid v3.2.0+incompatible
 	github.com/gorilla/sessions v1.2.0
-	github.com/go-sql-driver/mysql v1.5.0
 	github.com/howeyc/fsnotify v0.9.0 // indirect
 	github.com/jinzhu/gorm v1.9.12
 	github.com/joho/godotenv v1.3.0
@@ -24,6 +26,7 @@ require (
 	github.com/stretchr/tracer v0.0.0-20140124184152-66d3696bba97 // indirect
 	github.com/ugorji/go v1.1.7 // indirect
 	github.com/wcl48/valval v0.0.0-20190607031309-ea550ab72393
+	golang.org/x/crypto v0.0.0-20191205180655-e7c4368fe9dd
 	golang.org/x/net v0.0.0-20200226121028-0de0cce0169b
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sys v0.0.0-20200323222414-85ca7c5b95cd // indirect
