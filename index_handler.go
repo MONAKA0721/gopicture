@@ -5,12 +5,15 @@ import(
   "net/http"
   "encoding/gob"
   "fmt"
+  "os"
+  "encoding/json"
   "golang.org/x/net/context"
   "google.golang.org/api/iterator"
   "golang.org/x/oauth2"
   "github.com/gorilla/sessions"
   oauthapi "google.golang.org/api/oauth2/v2"
   "gopicture/models"
+  "github.com/dgrijalva/jwt-go"
 )
 
 var (
@@ -144,3 +147,71 @@ func profileFromSession(r *http.Request) (*oauthapi.Userinfoplus, uint) {
 	}
 	return ui, uid
 }
+
+var ApiIndex = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+  authHeader := r.Header.Get("Authorization")
+  bearerToken := strings.Split(authHeader, " ")
+
+  tokenString := bearerToken[1]
+  token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+        return []byte(os.Getenv("JWT_SIGNINKEY")), nil
+  })
+  claims, ok := token.Claims.(jwt.MapClaims);
+  if !ok || !token.Valid {
+    fmt.Println(err)
+  }
+	ctx := context.Background()
+	it := bucket.Objects(ctx, nil)
+	folders := []string{}
+	for {
+		attrs, err := it.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return
+		}
+		end := strings.Index(attrs.Name, "/")
+		folders = append(folders, attrs.Name[:end])
+	}
+	m := make(map[string]bool)
+	uniqFolders := []string{}
+
+	for _, ele := range folders {
+		if !m[ele] {
+			m[ele] = true
+			uniqFolders = append(uniqFolders, ele)
+		}
+	}
+  type Folder struct {
+    Name string
+    Hash string
+    TopPicName string
+  }
+  var indexFolders []Folder
+  uid := uint(claims["uid"].(float64))
+  rows, err := models.FindAlbums(uid)
+  if err != nil{
+    fmt.Println(err)
+  }
+  defer rows.Close()
+  for rows.Next() {
+    var name string
+    var hash string
+    var aid int
+    rows.Scan(&name, &hash, &aid)
+    row := models.FindTopPicture(aid)
+    var pictureName string
+    row.Scan(&pictureName)
+    if pictureName == ""{
+      var pic = models.Picture{}
+      _ = pic.FindFirstPicture(aid)
+      topPicName := pic.Name
+      indexFolders = append(indexFolders, Folder{Name:name, Hash:hash, TopPicName: topPicName})
+    }else{
+      topPicName := pictureName
+      indexFolders = append(indexFolders, Folder{Name:name, Hash:hash, TopPicName: topPicName})
+    }
+  }
+	json.NewEncoder(w).Encode(indexFolders)
+})

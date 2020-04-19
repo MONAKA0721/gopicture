@@ -19,6 +19,7 @@ import (
   "golang.org/x/oauth2/google"
   "github.com/dgrijalva/jwt-go"
   "github.com/jinzhu/gorm"
+  jwtmiddleware "github.com/auth0/go-jwt-middleware"
 
   "gopicture/models"
 )
@@ -168,9 +169,9 @@ func createToken(user models.User) (string, error) {
   // HS254 -> 証明生成用(https://ja.wikipedia.org/wiki/JSON_Web_Token)
   token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
       "email": user.Email,
+      "uid": user.ID,
       "iss":   "__init__", // JWT の発行者が入る(文字列(__init__)は任意)
   })
-
   tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SIGNINKEY")))
 
   fmt.Println("-----------------------------")
@@ -182,3 +183,11 @@ func createToken(user models.User) (string, error) {
 
   return tokenString, nil
 }
+
+// JwtMiddleware check token
+var JwtMiddleware = jwtmiddleware.New(jwtmiddleware.Options{
+  ValidationKeyGetter: func(token *jwt.Token) (interface{}, error) {
+      return []byte(os.Getenv("JWT_SIGNINKEY")), nil
+  },
+  SigningMethod: jwt.SigningMethodHS256,
+})

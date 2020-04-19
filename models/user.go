@@ -9,7 +9,7 @@ import (
 //User テーブル準備
 type User struct {
 	gorm.Model
-	Name        string    `json:"name" gorm:"unique;not null"`
+	Name        string    `json:"name" gorm:"not null"`
 	Email       string    `json:"email" gorm:"unique;not null"`
 	Password    string    `json:"password"`
 	Albums      []Album   `gorm:"many2many:user_albums;"`

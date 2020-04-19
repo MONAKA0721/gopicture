@@ -6,16 +6,19 @@ require (
 	cloud.google.com/go/firestore v1.1.1
 	cloud.google.com/go/storage v1.6.0
 	firebase.google.com/go v3.12.0+incompatible
+	github.com/auth0/go-jwt-middleware v0.0.0-20190805220309-36081240882b
 	github.com/clbanning/x2j v0.0.0-20191024224557-825249438eec // indirect
 	github.com/davecgh/go-spew v1.1.0
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/gofrs/uuid v3.2.0+incompatible
+	github.com/gorilla/mux v1.7.4
 	github.com/gorilla/sessions v1.2.0
 	github.com/howeyc/fsnotify v0.9.0 // indirect
 	github.com/jinzhu/gorm v1.9.12
 	github.com/joho/godotenv v1.3.0
 	github.com/mattn/go-colorable v0.1.6 // indirect
+	github.com/mrvdot/golang-utils v0.0.0-20141207233330-84173ecd73fd
 	github.com/pilu/config v0.0.0-20131214182432-3eb99e6c0b9a // indirect
 	github.com/pilu/fresh v0.0.0-20190826141211-0fa698148017 // indirect
 	github.com/stretchr/codecs v0.0.0-20170403063245-04a5b1e1910d // indirect
