@@ -25,7 +25,6 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Allowed POST method only", http.StatusMethodNotAllowed)
 		return
 	}
-  fmt.Println(r)
 	r.ParseMultipartForm(32 << 20)
 	fhs := r.MultipartForm.File["upload-firebase"]
 	ctx := context.Background()
@@ -105,6 +104,7 @@ func init() {
 }
 
 var ApiUpload = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+  fmt.Println(r)
   authHeader := r.Header.Get("Authorization")
   bearerToken := strings.Split(authHeader, " ")
 
