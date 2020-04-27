@@ -22,6 +22,11 @@ func (u *User) FindByEmail(email string) (err error) {
 	return db.Where("email = ?", email).First(u).Error
 }
 
+func (u *User) FindByID(id uint) (err error) {
+	db := database.GetDB()
+	return db.Where("id = ?", id).First(u).Error
+}
+
 func (u *User) First() (err error) {
 	db := database.GetDB()
 	return db.First(u).Error

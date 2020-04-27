@@ -30,6 +30,7 @@ func main() {
 
 	http.Handle("/api/index", JwtMiddleware.Handler(ApiIndex))
 	http.Handle("/api/show/", JwtMiddleware.Handler(ApiShow))
+	http.Handle("/api/upload", JwtMiddleware.Handler(ApiUpload))
 	http.Handle("/statics/", http.StripPrefix("/statics/", http.FileServer(http.Dir("statics/"))))
 	http.HandleFunc("/api/", Api)
 	http.HandleFunc("/", Index)
